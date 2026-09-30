@@ -15,14 +15,16 @@
 bl_info = {
     "name": "工作台快渲 (Workbench Quick Look)",
     "author": "WorkBuddy",
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "blender": (4, 0, 0),
     "location": "3D 视图 > 侧栏 (N) > 快渲",
     "description": "设好相机后直接出工作台风格的预览图/动画；全程不切换渲染引擎，Cycles 保持不动",
     "category": "Render",
 }
 
+import json
 import os
+import time
 
 import bpy
 from bpy.props import (
@@ -329,18 +331,62 @@ def _apply_cavity_preset(scene):
     return ridge, valley
 
 
+def _dump_shading(shading):
+    """把当前外观压成 JSON 字符串，供「预览外观记忆」保存。"""
+    return json.dumps(_snapshot_shading(shading), ensure_ascii=False, sort_keys=True)
+
+
+def _load_profile(settings):
+    """取出记住的预览外观；没记住或数据损坏则返回 None。"""
+    raw = (settings.preview_profile or "").strip()
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) and data else None
+
+
+def _save_profile(scene):
+    """把「用户此刻调好的外观」记下来 —— 必须在还原之前调用，否则存到的是还原后的值。"""
+    settings = scene.wqr
+    if not settings.remember_preview:
+        return False
+    settings.preview_profile = _dump_shading(scene.display.shading)
+    settings.preview_profile_time = time.strftime("%m-%d %H:%M")
+    return True
+
+
 def _start_preview(scene, state):
-    # 先快照“未套用预设”的原值，保证关掉开关能还原回去
+    # 先快照「当前」原值，保证关掉开关还能还原回去
     state["shading"] = _snapshot_shading(scene.display.shading)
     state["spaces"] = _snapshot_viewports()
-    if scene.wqr.apply_cavity_preset:
+    state["from_profile"] = False
+
+    # 优先还原「上次预览时调好的外观」；没记忆时才退回出厂预设。
+    # 顺序不能反：否则用户调好的腔体值会被预设覆盖，等于每次重来。
+    failed = []
+    profile = _load_profile(scene.wqr) if scene.wqr.remember_preview else None
+    if profile:
+        failed = _assign_attrs(scene.display.shading, profile)
+        state["from_profile"] = True
+    elif scene.wqr.apply_cavity_preset:
         _apply_cavity_preset(scene)
+
     _apply_preview_to_viewports(scene, scene.wqr.preview_camera)
     state["active"] = True
+    return failed
 
 
 def _stop_preview(scene, state):
-    """关掉预览：视口恢复原样，外观参数也回到打开开关之前。返回写失败的属性名列表。"""
+    """关掉预览：先记住用户调好的外观（下次打开能还原），再把视口与外观还原到打开之前。
+
+    返回写失败的属性名列表。
+    """
+    if state.get("active"):
+        # 只有真的在预览中才存 —— 闲置时调用（例如卸载插件）不能把还原后的值当记忆存进去
+        _save_profile(scene)
     failed = list(_restore_viewports(state.get("spaces")))
     failed += _assign_attrs(scene.display.shading, state.get("shading"))
     state["active"] = False
@@ -404,10 +450,23 @@ class WQR_Properties(PropertyGroup):
         update=_on_preview_camera_changed,
     )
     apply_cavity_preset: BoolProperty(
-        name="开预览时套用",
-        description="打开实时预览时，自动把腔体脊/谷系数写成下面的预设值（关掉开关会一起还原）",
+        name="无记忆时套用预设",
+        description=(
+            "仅在「还没记住任何预览外观」时生效：打开预览时把腔体脊/谷系数写成下面的预设值。"
+            "一旦记住过外观，就优先用记住的那份"
+        ),
         default=True,
     )
+    remember_preview: BoolProperty(
+        name="记住预览外观",
+        description=(
+            "关掉预览时自动保存当时的外观；下次打开预览自动还原成那个样子，"
+            "不用每次重新调（记忆随 .blend 保存）"
+        ),
+        default=True,
+    )
+    preview_profile: StringProperty(default="")
+    preview_profile_time: StringProperty(default="")
     cavity_preset_ridge: FloatProperty(
         name="脊",
         description="腔体脊系数（世界与屏幕两组一起写）",
@@ -598,17 +657,19 @@ class WQR_OT_toggle_preview(Operator):
         settings = scene.wqr
 
         if _PREVIEW.get("active"):
+            saved = settings.remember_preview
             failed = _stop_preview(scene, _PREVIEW)
             settings.preview_on = False
+            tail = "；这次的外观已记住，下次打开会还原" if saved else ""
             if failed:
-                self.report({'WARNING'}, "已还原，但有 %d 项没能写回：%s"
-                            % (len(failed), "、".join(failed)))
+                self.report({'WARNING'}, "已还原，但有 %d 项没能写回：%s%s"
+                            % (len(failed), "、".join(failed), tail))
             else:
-                self.report({'INFO'}, "已还原到打开预览前的视口与外观设置")
+                self.report({'INFO'}, "已还原到打开预览前的视口与外观%s" % tail)
             return {'FINISHED'}
 
         try:
-            _start_preview(scene, _PREVIEW)
+            failed = _start_preview(scene, _PREVIEW)
         except Exception as exc:
             _PREVIEW["active"] = False
             settings.preview_on = False
@@ -616,7 +677,15 @@ class WQR_OT_toggle_preview(Operator):
             return {'CANCELLED'}
 
         settings.preview_on = True
-        self.report({'INFO'}, "预览已打开：改下面的外观参数会立刻在视口生效")
+        if _PREVIEW.get("from_profile"):
+            head = "预览已打开：用的是上次记住的外观"
+        else:
+            head = "预览已打开：改下面的外观参数会立刻在视口生效"
+        if failed:
+            self.report({'WARNING'}, "%s；但有 %d 项没能写回：%s"
+                        % (head, len(failed), "、".join(failed)))
+        else:
+            self.report({'INFO'}, head)
         return {'FINISHED'}
 
 
@@ -633,6 +702,20 @@ class WQR_OT_apply_cavity_preset(Operator):
             _push_shading(scene)
         self.report({'INFO'}, "腔体 脊 = %.3g，谷 = %.3g（世界与屏幕两组都已写入）"
                     % (ridge, valley))
+        return {'FINISHED'}
+
+
+class WQR_OT_forget_preview_profile(Operator):
+    bl_idname = "wqr.forget_preview_profile"
+    bl_label = "忘记记住的外观"
+    bl_description = "清掉记住的预览外观；下次打开预览会重新使用出厂预设"
+    bl_options = {'REGISTER'}
+
+    def execute(self, context):
+        settings = context.scene.wqr
+        settings.preview_profile = ""
+        settings.preview_profile_time = ""
+        self.report({'INFO'}, "已清掉记住的预览外观；下次打开预览会重新用出厂预设")
         return {'FINISHED'}
 
 
@@ -722,12 +805,23 @@ class WQR_PT_panel(Panel):
         sub = box.column()
         sub.enabled = settings.preview_on
         _prop(sub, settings, "preview_camera", text="同时切到相机视角")
+
+        sub = box.column()
+        _prop(sub, settings, "remember_preview", text="记住外观（下次开预览自动还原）")
+        row = box.row(align=True)
+        if settings.preview_profile:
+            row.label(text="已记住 " + (settings.preview_profile_time or "（本次）"),
+                      icon='CHECKMARK')
+            row.operator("wqr.forget_preview_profile", text="", icon='TRASH')
+        else:
+            row.label(text="还没记住外观（用出厂预设）", icon='INFO')
+
         tip = box.column()
         tip.scale_y = 0.9
         if settings.preview_on:
             tip.label(text="改下面的外观，视口立刻跟着变", icon='INFO')
         else:
-            tip.label(text="关掉会还原到打开前的视口与外观", icon='INFO')
+            tip.label(text="关掉会还原场景外观，但会记住你调好的样子", icon='INFO')
 
         layout.separator()
         box = layout.box()
@@ -793,6 +887,7 @@ _CLASSES = (
     WQR_OT_engine_anim,
     WQR_OT_toggle_preview,
     WQR_OT_apply_cavity_preset,
+    WQR_OT_forget_preview_profile,
     WQR_OT_open_folder,
     WQR_PT_panel,
 )

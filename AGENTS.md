@@ -1,6 +1,6 @@
 # AGENTS.md · 项目规则
 
-> 📌 **文档基线**：2026-09-30（commit `cf67688`）完成四件套重写
+> 📌 **文档基线**：2026-09-30（commit `<待提交时回填>`）v1.5.0：预览外观记忆补全（含抗锯齿）
 > **更新文档/代码后，请更新此行**（日期 + 新 commit hash），并在 CHANGELOG 追加版本
 
 ## 技术栈
@@ -23,6 +23,10 @@
 - **`bpy.ops.render.opengl(view_context=False)` 与 `scene.render.engine` 无关**：它按**场景设置**渲染（活动相机 + `scene.display.shading`），Cycles 下 `poll()` 依然为 `True`。
 - ★ **「记住临时改过的值」类功能：保存必须在还原之前，且优先级必须高于出厂预设。**
   以预览外观记忆为例 —— 顺序反了会存到还原后的空值；优先级反了则用户调好的值每次开预览都会被预设冲掉，等于白调。
+- ★ **工作台外观参数分属两个 Struct，收集清单必须分两份**：绝大多数在 `scene.display.shading`（`View3DShading`），
+  但「抗锯齿」`render_aa` 在 `scene.display`（`SceneDisplay`）**本体**上 —— 只收 shading 就会漏掉它，
+  而且**完全不报错**（它根本没进收集清单，连「写失败」都不会出现）。加外观控件前先两边各 `hasattr` 测一次：
+  `hasattr(scene.display, name)` / `hasattr(scene.display.shading, name)`。
 
 ## 约定
 

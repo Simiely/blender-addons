@@ -15,7 +15,7 @@
 bl_info = {
     "name": "工作台快渲 (Workbench Quick Look)",
     "author": "WorkBuddy",
-    "version": (1, 4, 0),
+    "version": (1, 5, 0),
     "blender": (4, 0, 0),
     "location": "3D 视图 > 侧栏 (N) > 快渲",
     "description": "设好相机后直接出工作台风格的预览图/动画；全程不切换渲染引擎，Cycles 保持不动",
@@ -60,10 +60,18 @@ _SHADING_ATTRS = (
     "use_world_space_lighting",
 )
 
+# ★ 工作台外观里有个别参数**不在 shading 上**，而在 scene.display 上。
+#   最典型的就是「抗锯齿」render_aa（View3DShading 里根本没有这个属性）。
+#   ⇒ 凡是加进面板的外观控件，都要先确认它挂在哪个 Struct 上，再决定进哪个清单。
+_DISPLAY_ATTRS = (
+    "render_aa",
+)
+
 # 实时预览的运行时状态。只活在本次 Blender 会话里，不写进 .blend。
 _PREVIEW = {
     "active": False,
     "shading": None,   # scene.display.shading 的快照
+    "display": None,   # scene.display 本体的快照（抗锯齿等）
     "spaces": None,    # 各 3D 视口的快照
 }
 
@@ -258,6 +266,19 @@ def _snapshot_shading(shading):
     return data
 
 
+def _snapshot_display(display):
+    """冻结 scene.display 本体上的外观值（抗锯齿在这里，不在 shading 上）。"""
+    data = {}
+    for name in _DISPLAY_ATTRS:
+        if not hasattr(display, name):
+            continue
+        try:
+            data[name] = getattr(display, name)
+        except Exception:
+            continue
+    return data
+
+
 def _snapshot_viewports():
     snapshot = []
     for space in _viewport_spaces():
@@ -331,13 +352,27 @@ def _apply_cavity_preset(scene):
     return ridge, valley
 
 
-def _dump_shading(shading):
-    """把当前外观压成 JSON 字符串，供「预览外观记忆」保存。"""
-    return json.dumps(_snapshot_shading(shading), ensure_ascii=False, sort_keys=True)
+def _dump_profile(scene):
+    """把当前整份外观压成 JSON 字符串，供「预览外观记忆」保存。
+
+    结构：{"shading": {...}, "display": {...}}。
+    分成两层是因为外观控件分散在两个 Struct 上（抗锯齿在 scene.display，其余在 shading）。
+    """
+    return json.dumps(
+        {
+            "shading": _snapshot_shading(scene.display.shading),
+            "display": _snapshot_display(scene.display),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+    )
 
 
 def _load_profile(settings):
-    """取出记住的预览外观；没记住或数据损坏则返回 None。"""
+    """取出记住的预览外观；没记住或数据损坏则返回 None。
+
+    兼容 v1.4.0 及更早的旧格式（整份 dict 就是 shading 快照），老 .blend 打开还能用。
+    """
     raw = (settings.preview_profile or "").strip()
     if not raw:
         return None
@@ -345,7 +380,11 @@ def _load_profile(settings):
         data = json.loads(raw)
     except ValueError:
         return None
-    return data if isinstance(data, dict) and data else None
+    if not isinstance(data, dict) or not data:
+        return None
+    if "shading" in data or "display" in data:
+        return data
+    return {"shading": data, "display": {}}
 
 
 def _save_profile(scene):
@@ -353,7 +392,7 @@ def _save_profile(scene):
     settings = scene.wqr
     if not settings.remember_preview:
         return False
-    settings.preview_profile = _dump_shading(scene.display.shading)
+    settings.preview_profile = _dump_profile(scene)
     settings.preview_profile_time = time.strftime("%m-%d %H:%M")
     return True
 
@@ -361,6 +400,7 @@ def _save_profile(scene):
 def _start_preview(scene, state):
     # 先快照「当前」原值，保证关掉开关还能还原回去
     state["shading"] = _snapshot_shading(scene.display.shading)
+    state["display"] = _snapshot_display(scene.display)
     state["spaces"] = _snapshot_viewports()
     state["from_profile"] = False
 
@@ -369,7 +409,8 @@ def _start_preview(scene, state):
     failed = []
     profile = _load_profile(scene.wqr) if scene.wqr.remember_preview else None
     if profile:
-        failed = _assign_attrs(scene.display.shading, profile)
+        failed = _assign_attrs(scene.display.shading, profile.get("shading"))
+        failed += _assign_attrs(scene.display, profile.get("display"))
         state["from_profile"] = True
     elif scene.wqr.apply_cavity_preset:
         _apply_cavity_preset(scene)
@@ -389,8 +430,10 @@ def _stop_preview(scene, state):
         _save_profile(scene)
     failed = list(_restore_viewports(state.get("spaces")))
     failed += _assign_attrs(scene.display.shading, state.get("shading"))
+    failed += _assign_attrs(scene.display, state.get("display"))
     state["active"] = False
     state["shading"] = None
+    state["display"] = None
     state["spaces"] = None
     return failed
 
@@ -672,6 +715,9 @@ class WQR_OT_toggle_preview(Operator):
             failed = _start_preview(scene, _PREVIEW)
         except Exception as exc:
             _PREVIEW["active"] = False
+            _PREVIEW["shading"] = None
+            _PREVIEW["display"] = None
+            _PREVIEW["spaces"] = None
             settings.preview_on = False
             self.report({'ERROR'}, "打开预览失败：%s" % exc)
             return {'CANCELLED'}
@@ -898,6 +944,7 @@ def _on_file_load(*_args):
     """换文件后预览状态会失真，直接作废（视口保持当时的样子，不再尝试还原）。"""
     _PREVIEW["active"] = False
     _PREVIEW["shading"] = None
+    _PREVIEW["display"] = None
     _PREVIEW["spaces"] = None
 
 
@@ -920,6 +967,7 @@ def unregister():
             print("[工作台快渲] 卸载还原失败：", exc)
             _PREVIEW["active"] = False
             _PREVIEW["shading"] = None
+            _PREVIEW["display"] = None
             _PREVIEW["spaces"] = None
     if hasattr(bpy.types.Scene, "wqr"):
         del bpy.types.Scene.wqr

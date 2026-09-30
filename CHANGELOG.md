@@ -15,6 +15,45 @@
 
 ---
 
+## workbench_quick_render v1.5.0（2026-09-30）
+
+**外观记忆补全：抗锯齿也存得住**（用户追问：「阴影那些列出来可以选择的参数，都是可以记忆的对吗」，
+并明确要求「工作台外观的参数，都是可以存到的；打开实时预览就能调用上次记录的」）。
+
+### 问题
+
+v1.4.0 的记忆只覆盖 `scene.display.shading` 上的 16 个属性，而**「抗锯齿」`render_aa`
+根本不长在 shading 上** —— 它是 `scene.display` 本体的属性（`View3DShading` 里查无此物）。
+结果：面板上「抗锯齿」看着和别的控件一样，**却既不进记忆、也不参与还原**。
+
+### 新增
+
+- 常量 `_DISPLAY_ATTRS = ("render_aa",)`：`scene.display` 本体的外观清单
+- 函数 `_snapshot_display(display)`：冻结 display 层外观
+- 记忆体改成**两层结构**：`{"shading": {...}, "display": {"render_aa": "..."}}`
+  （`_dump_profile(scene)` 生成，`_load_profile()` 解析）
+- 实时预览的 `_PREVIEW` 状态新增 `"display"` 字段，与 `"shading"` 一起快照、一起还原
+
+### 兼容
+
+- `_load_profile()`**认旧格式**：v1.4.0 及更早存下的整份 dict 会被自动包成
+  `{"shading": <旧数据>, "display": {}}` ⇒ 老 `.blend` 打开后记忆照样生效，不会因为升级而失效
+
+### 验证
+
+- `test_preview.py` **90 项全过**（比 v1.4.0 多 6 项），新增断言：
+  开关一次后 `render_aa` 正确还原、重开预览时 `render_aa` 从记忆还原成 `'16'`、
+  记忆体确为两层键（`["display", "shading"]`）、旧格式能被规范化并正常套用
+- 回归 `test_final.py` 21 项、`test_api.py` 13 项，均 `FAILS 0 []`
+
+### 说明
+
+- 抗锯齿**不影响视口显示**（视口的 AA 由 Blender 偏好设置控制），它只决定
+  `render.opengl` 出图的边缘平滑度 ⇒ 记忆它的意义是「下次出图沿用上次的取舍」，而非实时可见
+- 教训：**往面板加外观控件前，先确认这个属性挂在哪个 Struct 上**，再决定进 `_SHADING_ATTRS` 还是 `_DISPLAY_ATTRS`
+
+---
+
 ## workbench_quick_render v1.4.0（2026-09-30）
 
 **预览外观记忆**（用户反馈：「关闭预览之后，再次预览，之前的设置又会清零，

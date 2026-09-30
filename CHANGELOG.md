@@ -15,6 +15,87 @@
 
 ---
 
+## workbench_quick_render v1.6.0（2026-09-30）
+
+**按审计计划做一轮受控重构**（用户要求「架构清晰吗，不要想当然，需要搜索调研得出结论」
+→ 先给判断与计划 → 批准后「按照计划 修复问题」）。
+
+### 背景
+
+v1.5.0 之后用 **AST 调用图 + radon + difflib + 无头探测**做了一次客观审计（不是「我觉得乱」）：
+分层单向、反向依赖 0、循环 0、死代码 0 —— **结构本身没问题**。
+但量出 3 处「改动成本热点」，见 [`docs/技术债与重构计划.md`](./docs/技术债与重构计划.md)。
+
+当时的结论是**不改**：4 个渲染 Operator 里有 3 个在无头下**结构性不可测**
+（`render.opengl` 在 `-b` 下必失败），重构等于在没有护栏的地方动刀。
+本版先补护栏，再动刀。
+
+### 消除的 3 项技术债
+
+**债 1 · 渲染流程骨架重复 → `_render_with_restore()`**
+
+- 原来 4 个渲染 Operator 各写一遍「快照 → 渲染 → `try/finally` 还原」，
+  公共骨架 14 条语句 ×4，两两相似度最高 **0.74**（业内重复率标准 <5%）
+- 新增 `_render_with_restore(scene, body, restore_engine=False)`：统一编排，
+  `body` 里**只放那一行真正无法无头测试的渲染调用**
+- 关键切法：**没有**把整个流程抽成一个 `_run_render()` —— 那样会把不可测的那行一起包进去、
+  等于**扩大**不可测面积。现在的做法把不可测面积从「4 份骨架」压到「4 行调用」
+
+**债 2 · `_PREVIEW` 重置手写 3 遍 → `_reset_preview_state()`**
+
+- 原来 4 个字段在 3 处各写一遍（闲置 / 卸载 / 换文件），加字段漏改一处**不会报错**
+  —— v1.5.0 新增 `"display"` 字段时正好踩过这里
+- 现在统一走 `_reset_preview_state()`（连「打开失败」算上共 4 条路径），
+  函数文档里写明「往 `_PREVIEW` 加字段必须同步改本函数」
+
+**债 3 · `draw()` 116 行 / 圈复杂度 15 → 拆成 5 个盒子函数**
+
+- 依据 Blender 官方 Best Practice：*"If you need more code for the layout declaration
+  than for the actual properties, then you are doing it wrong."*
+  官方 `io_scene_fbx` / `io_scene_gltf2` 同样把 `draw()` 拆成多个辅助函数
+- 拆为 `_draw_status_box` / `_draw_render_box` / `_draw_preview_box` /
+  `_draw_shading_box` / `_draw_footer` + 一个 `_prop()` 守卫；
+  `draw()` 只剩分发 + 末尾的预览同步钩子
+- 意外收获：拆出的函数**只调 `layout` 的方法** ⇒ 可以用假 layout（记录调用了哪些控件）
+  在无头下测 —— 面板布局从「不可测」变成「可断言」
+
+### 验证
+
+- **新增 `test_ops.py`（69 项）**，第一次把渲染 Operator 纳入护栏：
+  - 3 个 `render.opengl` Operator 在无头下**必然失败**，恰好用来断言失败路径的
+    `finally` 还原（分辨率百分比 / 帧范围 / 输出路径全部写回）
+  - `wqr.render_engine` 在无头下**能真跑通**：渲染 1 帧到临时目录、断言产出了文件、
+    断言引擎切回原值
+  - `_reset_preview_state` / `_render_with_restore`（含异常路径与 `restore_engine`）单元覆盖
+  - 5 个盒子函数 + `_prop` 的控件存在性断言
+- 回归全绿：`test_preview.py` 90 + `test_final.py` 21 + `test_api.py` 13 + `test_ops.py` 69
+  = **193 项，全部 `FAILS 0 []`**（v1.5.0 时是 124 项）
+
+### 指标（radon 实测，改造前 → 后）
+
+| 指标 | 改造前 | 改造后 |
+|---|---|---|
+| 圈复杂度 > 10 的函数 | 2 个（`WQR_PT_panel` 16、`draw` 15） | **0 个**（`radon cc -n C` 无输出） |
+| `WQR_PT_panel.draw` | 116 行 / CC 15 | 约 18 行 / **CC 3** |
+| `WQR_OT_still.execute` 类 | CC 6 | **CC 4** |
+| 4 个渲染 `execute` 合计行数 | 114 | 94 |
+| 渲染骨架两两相似度 | 0.50 ~ 0.74 | 0.17 ~ 0.73（多数 ≤0.48） |
+| `_snapshot(scene)` 调用点 | 5 | 2 |
+| `scene.wqr.restore_settings` 读取点 | 4 | 1 |
+| `_PREVIEW` 触点 | 27 | 11 |
+| 可维护性指数 MI | 13.26 (B) | **15.56 (B)** |
+
+> 层间矩阵复核：`L4 UI → L2` 由 23 次降为 15 次（编排收敛）；反向依赖仍 0、死代码仍 0。
+
+### 说明
+
+- 这一版**只动结构、不动行为**：所有用户可见的行为（按钮文案、还原语义、记忆优先级）
+  与 v1.5.0 **完全一致**，测试断言也是照 v1.5.0 的行为写的
+- 审计与重构的判据（「该不该重构」三条：触发条件是否出现 / 改完能否被自动化接住 /
+  收益是「防未来」还是「解当下痛点」）已提炼进技能 `python-arch-audit`
+
+---
+
 ## workbench_quick_render v1.5.0（2026-09-30）
 
 **外观记忆补全：抗锯齿也存得住**（用户追问：「阴影那些列出来可以选择的参数，都是可以记忆的对吗」，

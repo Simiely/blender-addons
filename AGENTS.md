@@ -1,6 +1,6 @@
 # AGENTS.md · 项目规则
 
-> 📌 **文档基线**：2026-09-30（commit `95317a1`）v1.5.0：预览外观记忆补全（含抗锯齿）
+> 📌 **文档基线**：2026-09-30（commit `<待提交时回填>`）v1.6.0：受控重构（渲染编排收敛 + 面板拆分）
 > **更新文档/代码后，请更新此行**（日期 + 新 commit hash），并在 CHANGELOG 追加版本
 
 ## 技术栈
@@ -27,6 +27,15 @@
   但「抗锯齿」`render_aa` 在 `scene.display`（`SceneDisplay`）**本体**上 —— 只收 shading 就会漏掉它，
   而且**完全不报错**（它根本没进收集清单，连「写失败」都不会出现）。加外观控件前先两边各 `hasattr` 测一次：
   `hasattr(scene.display, name)` / `hasattr(scene.display.shading, name)`。
+- ★ **渲染类 Operator 一律走 `_render_with_restore(scene, body)`**，别在 `execute` 里自己写
+  `_snapshot` / `try...finally`。新渲染方式只要把「**那一行渲染调用**」放进 `body` 闭包即可；
+  需要无条件还原引擎（如引擎式渲染）就传 `restore_engine=True`。
+  这样做是为了把**唯一无法无头测试的那行调用**单独隔离出来 —— 抽成一个大函数反而会**扩大**不可测面积。
+- ★ **`_PREVIEW` 的 4 个字段只从 `_reset_preview_state()` 一处清空**，别在 `unregister` / 换文件 /
+  打开失败各写一遍。往 `_PREVIEW` 加字段时**必须同步改这个函数**（漏改不报错，表现为残留旧快照）。
+- ★ **改代码前先量**：判断「要不要重构」不要凭感觉，跑 `analyze_arch.py`（AST 调用图）+ `radon cc/mi`
+  + 重复度，并按三条判据决策（触发条件是否出现 / 改完能否被自动化接住 / 收益是「防未来」还是「解当下痛点」）。
+  完整方法见技能 `python-arch-audit`，本仓库的例子见 [`docs/技术债与重构计划.md`](./docs/技术债与重构计划.md)。
 
 ## 约定
 

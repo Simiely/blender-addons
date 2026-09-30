@@ -10,7 +10,7 @@
 
 | 插件 | 说明 | 版本 | 安装文件 |
 |---|---|---|---|
-| **工作台快渲**<br>Workbench Quick Look | 设好相机后直接出工作台（Workbench）风格的预览图 / 动画。**全程不切换渲染引擎**，Cycles 的设置原封不动 | v1.5.0 | [`addons/workbench_quick_render.py`](./addons/workbench_quick_render.py) |
+| **工作台快渲**<br>Workbench Quick Look | 设好相机后直接出工作台（Workbench）风格的预览图 / 动画。**全程不切换渲染引擎**，Cycles 的设置原封不动 | v1.6.0 | [`addons/workbench_quick_render.py`](./addons/workbench_quick_render.py) |
 
 > 加插件 = 往 `addons/` 丢一个 `.py` + 上表加一行。命名与提交约定见 [AGENTS.md](./AGENTS.md)。
 
@@ -60,6 +60,7 @@ blender-addons/
 │   └── workbench_quick_render.py
 └── docs/              # 生长出来的详细文档（超过阈值才拆，不提前设计）
     ├── 架构.md
+    ├── 技术债与重构计划.md
     └── 问题记录/
 ```
 

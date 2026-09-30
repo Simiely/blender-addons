@@ -15,7 +15,7 @@
 bl_info = {
     "name": "工作台快渲 (Workbench Quick Look)",
     "author": "WorkBuddy",
-    "version": (1, 5, 0),
+    "version": (1, 6, 0),
     "blender": (4, 0, 0),
     "location": "3D 视图 > 侧栏 (N) > 快渲",
     "description": "设好相机后直接出工作台风格的预览图/动画；全程不切换渲染引擎，Cycles 保持不动",
@@ -176,6 +176,32 @@ def _count_png(directory, name):
         ])
     except OSError:
         return 0
+
+
+def _render_with_restore(scene, body, restore_engine=False):
+    """渲染流程的统一编排：快照 → 执行 body() → **无论如何**都还原。
+
+    设计要点：把「编排」与「渲染调用」分开 ——
+    body 里只放**唯一无法无头测试**的那行渲染调用，其余（快照 / 还原 / 引擎处理）都在本函数里。
+    这样无头测试可以传一个**假 body** 来验证还原是否生效，包括渲染抛异常的路径。
+
+    body() 返回 dict（要上报给用户的信息）；抛异常时结果里的 failure 是异常文本。
+    restore_engine=True 时额外**无条件**还原渲染引擎（引擎式渲染专用，
+    避免「忘了切回 Cycles」）。
+    """
+    snap = _snapshot(scene)
+    result = {}
+    failure = None
+    try:
+        result = body() or {}
+    except Exception as exc:
+        failure = str(exc)
+    finally:
+        if restore_engine:
+            scene.render.engine = snap["engine"]
+        if scene.wqr.restore_settings:
+            _restore_output(scene, snap)
+    return result, failure
 
 
 # --------------------------------------------------------------------------
@@ -438,6 +464,19 @@ def _stop_preview(scene, state):
     return failed
 
 
+def _reset_preview_state():
+    """清空实时预览的运行时状态。
+
+    闲置 / 卸载 / 换文件 / 打开失败四条路径统一走这里。
+    ★ 往 `_PREVIEW` 加字段时**必须**同步改本函数，否则会出现「有的字段清了、有的没清」，
+    表现为重开预览时残留上一次的旧快照。
+    """
+    _PREVIEW["active"] = False
+    _PREVIEW["shading"] = None
+    _PREVIEW["display"] = None
+    _PREVIEW["spaces"] = None
+
+
 # --------------------------------------------------------------------------
 # 参数
 # --------------------------------------------------------------------------
@@ -550,17 +589,14 @@ class WQR_OT_preview(Operator):
             self.report({'ERROR'}, problem)
             return {'CANCELLED'}
 
-        snap = _snapshot(scene)
-        try:
+        def body():
             _apply_preview_scale(scene)
             bpy.ops.render.opengl(animation=False, write_still=False, view_context=False)
-        except Exception as exc:
-            self.report({'ERROR'}, "快渲失败：%s" % exc)
-            return {'CANCELLED'}
-        finally:
-            if scene.wqr.restore_settings:
-                _restore_output(scene, snap)
 
+        _info, failure = _render_with_restore(scene, body)
+        if failure:
+            self.report({'ERROR'}, "快渲失败：%s" % failure)
+            return {'CANCELLED'}
         self.report({'INFO'}, "已送进渲染结果查看器（未写盘）")
         return {'FINISHED'}
 
@@ -578,24 +614,17 @@ class WQR_OT_still(Operator):
             self.report({'ERROR'}, problem)
             return {'CANCELLED'}
 
-        snap = _snapshot(scene)
-        written = ""
-        failure = ""
-        try:
+        def body():
             _apply_preview_scale(scene)
             _prepare_output(scene, video=False)
             bpy.ops.render.opengl(animation=False, write_still=True, view_context=False)
-            written = scene.render.frame_path(frame=scene.frame_current)
-        except Exception as exc:
-            failure = str(exc)
-        finally:
-            if scene.wqr.restore_settings:
-                _restore_output(scene, snap)
+            return {"written": scene.render.frame_path(frame=scene.frame_current)}
 
+        info, failure = _render_with_restore(scene, body)
         if failure:
             self.report({'ERROR'}, "快渲失败：%s" % failure)
             return {'CANCELLED'}
-        self.report({'INFO'}, "已写出：%s" % written)
+        self.report({'INFO'}, "已写出：%s" % info["written"])
         return {'FINISHED'}
 
 
@@ -612,36 +641,32 @@ class WQR_OT_anim(Operator):
             self.report({'ERROR'}, problem)
             return {'CANCELLED'}
 
-        snap = _snapshot(scene)
         video = scene.wqr.anim_format == 'MP4'
-        directory = name = ""
-        frames = 0
-        aborted = False
-        failure = ""
-        try:
+
+        def body():
             _apply_preview_scale(scene)
             _apply_frames(scene)
             directory, name = _prepare_output(scene, video=video)
             result = bpy.ops.render.opengl(animation=True, view_context=False)
-            aborted = 'CANCELLED' in result
-            if not video:
-                frames = _count_png(directory, name)
-        except Exception as exc:
-            failure = str(exc)
-        finally:
-            if scene.wqr.restore_settings:
-                _restore_output(scene, snap)
+            return {
+                "directory": directory,
+                "name": name,
+                "frames": 0 if video else _count_png(directory, name),
+                "aborted": 'CANCELLED' in result,
+            }
 
+        info, failure = _render_with_restore(scene, body)
         if failure:
             self.report({'ERROR'}, "快渲失败：%s" % failure)
             return {'CANCELLED'}
-        if aborted:
-            self.report({'WARNING'}, "已被中止，已出的文件留在：%s" % directory)
+        if info["aborted"]:
+            self.report({'WARNING'}, "已被中止，已出的文件留在：%s" % info["directory"])
             return {'CANCELLED'}
         if video:
-            self.report({'INFO'}, "已写出：%s" % os.path.join(directory, name + ".mp4"))
+            self.report({'INFO'}, "已写出：%s"
+                        % os.path.join(info["directory"], info["name"] + ".mp4"))
         else:
-            self.report({'INFO'}, "已写出 %d 帧到：%s" % (frames, directory))
+            self.report({'INFO'}, "已写出 %d 帧到：%s" % (info["frames"], info["directory"]))
         return {'FINISHED'}
 
 
@@ -661,28 +686,22 @@ class WQR_OT_engine_anim(Operator):
             self.report({'ERROR'}, problem)
             return {'CANCELLED'}
 
-        snap = _snapshot(scene)
         video = scene.wqr.anim_format == 'MP4'
-        directory = name = ""
-        failure = ""
-        try:
+        engine_before = scene.render.engine
+
+        def body():
             _apply_preview_scale(scene)
             _apply_frames(scene)
             directory, name = _prepare_output(scene, video=video)
             scene.render.engine = 'BLENDER_WORKBENCH'
             bpy.ops.render.render(animation=True)
-        except Exception as exc:
-            failure = str(exc)
-        finally:
-            # 引擎无条件还原，避免「忘了切回 Cycles」
-            scene.render.engine = snap["engine"]
-            if scene.wqr.restore_settings:
-                _restore_output(scene, snap)
+            return {"directory": directory, "name": name}
 
+        info, failure = _render_with_restore(scene, body, restore_engine=True)
         if failure:
             self.report({'ERROR'}, "渲染失败：%s" % failure)
             return {'CANCELLED'}
-        self.report({'INFO'}, "已切回 %s；输出在：%s" % (snap["engine"], directory))
+        self.report({'INFO'}, "已切回 %s；输出在：%s" % (engine_before, info["directory"]))
         return {'FINISHED'}
 
 
@@ -714,10 +733,7 @@ class WQR_OT_toggle_preview(Operator):
         try:
             failed = _start_preview(scene, _PREVIEW)
         except Exception as exc:
-            _PREVIEW["active"] = False
-            _PREVIEW["shading"] = None
-            _PREVIEW["display"] = None
-            _PREVIEW["spaces"] = None
+            _reset_preview_state()
             settings.preview_on = False
             self.report({'ERROR'}, "打开预览失败：%s" % exc)
             return {'CANCELLED'}
@@ -796,6 +812,128 @@ def _prop(layout, owner, name, **kwargs):
     return False
 
 
+# 面板按「盒子」拆成独立函数（官方源码里 io_scene_fbx / io_scene_gltf2 也是这么写的）。
+# 好处：每个函数只讲一件事；且它们只调 layout 的方法 ⇒ 可以用假 layout 在无头下测。
+
+def _draw_status_box(layout, scene, settings):
+    """顶部：当前渲染引擎、活动相机、三个渲染按钮。"""
+    box = layout.box()
+    row = box.row()
+    row.label(text="渲染引擎：" + scene.render.engine)
+    row = box.row()
+    if scene.camera:
+        row.label(text="相机：" + scene.camera.name)
+    else:
+        row.label(text="相机：未设置（Ctrl+Numpad0）", icon='ERROR')
+
+    col = layout.column(align=True)
+    col.scale_y = 1.35
+    col.operator("wqr.preview", icon='HIDE_OFF')
+    col.operator("wqr.render_still", icon='IMAGE_DATA')
+    col.operator("wqr.render_anim", icon='RENDER_ANIMATION')
+
+
+def _draw_render_box(layout, scene, settings):
+    """输出目录 / 文件名 / 格式 / 分辨率 / 帧范围。"""
+    layout.separator()
+    box = layout.box()
+    box.label(text="输出", icon='FILE_FOLDER')
+    _prop(box, settings, "output_dir", text="目录")
+    _prop(box, settings, "file_name", text="文件名")
+    _prop(box, settings, "anim_format", text="动画格式")
+    _prop(box, settings, "res_preset", text="分辨率")
+    row = box.row(align=True)
+    _prop(row, settings, "use_custom_range", text="自定义帧范围")
+    sub = row.row(align=True)
+    sub.enabled = settings.use_custom_range
+    _prop(sub, settings, "range_start", text="")
+    _prop(sub, settings, "range_end", text="")
+    box.operator("wqr.open_folder", icon='FILEBROWSER', text="打开输出目录")
+
+
+def _draw_preview_box(layout, scene, settings):
+    """实时预览开关 + 外观记忆状态。"""
+    layout.separator()
+    box = layout.box()
+    col = box.column(align=True)
+    col.scale_y = 1.25
+    col.operator(
+        "wqr.toggle_preview",
+        text=("停止预览（还原）" if settings.preview_on else "实时预览到视口"),
+        icon='RESTRICT_VIEW_OFF' if settings.preview_on else 'RESTRICT_VIEW_ON',
+        depress=settings.preview_on,
+    )
+    sub = box.column()
+    sub.enabled = settings.preview_on
+    _prop(sub, settings, "preview_camera", text="同时切到相机视角")
+
+    sub = box.column()
+    _prop(sub, settings, "remember_preview", text="记住外观（下次开预览自动还原）")
+    row = box.row(align=True)
+    if settings.preview_profile:
+        row.label(text="已记住 " + (settings.preview_profile_time or "（本次）"),
+                  icon='CHECKMARK')
+        row.operator("wqr.forget_preview_profile", text="", icon='TRASH')
+    else:
+        row.label(text="还没记住外观（用出厂预设）", icon='INFO')
+
+    tip = box.column()
+    tip.scale_y = 0.9
+    if settings.preview_on:
+        tip.label(text="改下面的外观，视口立刻跟着变", icon='INFO')
+    else:
+        tip.label(text="关掉会还原场景外观，但会记住你调好的样子", icon='INFO')
+
+
+def _draw_shading_box(layout, scene, settings):
+    """工作台外观 —— 直接改，不用切引擎。"""
+    layout.separator()
+    box = layout.box()
+    box.label(text="工作台外观（直接改，不用切引擎）", icon='MATERIAL')
+    shading = scene.display.shading
+    _prop(box, shading, "light", text="光照")
+    if getattr(shading, "light", "") == 'STUDIO':
+        _prop(box, shading, "studio_light", text="")
+    _prop(box, shading, "color_type", text="颜色")
+    if getattr(shading, "color_type", "") == 'SINGLE':
+        _prop(box, shading, "single_color", text="")
+    _prop(box, shading, "show_shadows", text="阴影")
+    if getattr(shading, "show_shadows", False):
+        sub = box.column(align=True)
+        _prop(sub, shading, "shadow_intensity", text="阴影强度", slider=True)
+
+    _prop(box, shading, "show_cavity", text="腔体")
+    if getattr(shading, "show_cavity", False):
+        sub = box.column(align=True)
+        _prop(sub, shading, "cavity_type", text="类型")
+        cavity_type = getattr(shading, "cavity_type", "")
+        if cavity_type in {'WORLD', 'BOTH'}:
+            _prop(sub, shading, "cavity_ridge_factor", text="世界 脊", slider=True)
+            _prop(sub, shading, "cavity_valley_factor", text="世界 谷", slider=True)
+        if cavity_type in {'SCREEN', 'BOTH'}:
+            _prop(sub, shading, "curvature_ridge_factor", text="屏幕 脊", slider=True)
+            _prop(sub, shading, "curvature_valley_factor", text="屏幕 谷", slider=True)
+        row = sub.row(align=True)
+        _prop(row, settings, "cavity_preset_ridge", text="预设 脊")
+        _prop(row, settings, "cavity_preset_valley", text="谷")
+        sub.row(align=True).operator("wqr.apply_cavity_preset", icon='CHECKMARK')
+        sub.row(align=True).prop(settings, "apply_cavity_preset")
+
+    _prop(box, shading, "show_object_outline", text="描边")
+    # ★ 抗锯齿不在 shading 上，而在 scene.display 本体上（见 docs/问题记录）
+    _prop(box, scene.display, "render_aa", text="抗锯齿")
+
+
+def _draw_footer(layout, scene, settings):
+    """底部：还原开关 + 两条提示。"""
+    layout.separator()
+    _prop(layout, settings, "restore_settings")
+    col = layout.column()
+    col.scale_y = 0.9
+    col.label(text="换个结果不满意？先调上面外观再重渲", icon='INFO')
+    col.label(text="引擎式渲染仅在需要 Freestyle 时用", icon='INFO')
+
+
 class WQR_PT_panel(Panel):
     bl_idname = "WQR_PT_panel"
     bl_label = "工作台快渲"
@@ -808,111 +946,16 @@ class WQR_PT_panel(Panel):
         scene = context.scene
         settings = scene.wqr
 
-        box = layout.box()
-        row = box.row()
-        row.label(text="渲染引擎：" + scene.render.engine)
-        row = box.row()
-        if scene.camera:
-            row.label(text="相机：" + scene.camera.name)
-        else:
-            row.label(text="相机：未设置（Ctrl+Numpad0）", icon='ERROR')
-
-        col = layout.column(align=True)
-        col.scale_y = 1.35
-        col.operator("wqr.preview", icon='HIDE_OFF')
-        col.operator("wqr.render_still", icon='IMAGE_DATA')
-        col.operator("wqr.render_anim", icon='RENDER_ANIMATION')
-
-        layout.separator()
-        box = layout.box()
-        box.label(text="输出", icon='FILE_FOLDER')
-        _prop(box, settings, "output_dir", text="目录")
-        _prop(box, settings, "file_name", text="文件名")
-        _prop(box, settings, "anim_format", text="动画格式")
-        _prop(box, settings, "res_preset", text="分辨率")
-        row = box.row(align=True)
-        _prop(row, settings, "use_custom_range", text="自定义帧范围")
-        sub = row.row(align=True)
-        sub.enabled = settings.use_custom_range
-        _prop(sub, settings, "range_start", text="")
-        _prop(sub, settings, "range_end", text="")
-        box.operator("wqr.open_folder", icon='FILEBROWSER', text="打开输出目录")
-
-        layout.separator()
-        box = layout.box()
-        col = box.column(align=True)
-        col.scale_y = 1.25
-        col.operator(
-            "wqr.toggle_preview",
-            text=("停止预览（还原）" if settings.preview_on else "实时预览到视口"),
-            icon='RESTRICT_VIEW_OFF' if settings.preview_on else 'RESTRICT_VIEW_ON',
-            depress=settings.preview_on,
-        )
-        sub = box.column()
-        sub.enabled = settings.preview_on
-        _prop(sub, settings, "preview_camera", text="同时切到相机视角")
-
-        sub = box.column()
-        _prop(sub, settings, "remember_preview", text="记住外观（下次开预览自动还原）")
-        row = box.row(align=True)
-        if settings.preview_profile:
-            row.label(text="已记住 " + (settings.preview_profile_time or "（本次）"),
-                      icon='CHECKMARK')
-            row.operator("wqr.forget_preview_profile", text="", icon='TRASH')
-        else:
-            row.label(text="还没记住外观（用出厂预设）", icon='INFO')
-
-        tip = box.column()
-        tip.scale_y = 0.9
-        if settings.preview_on:
-            tip.label(text="改下面的外观，视口立刻跟着变", icon='INFO')
-        else:
-            tip.label(text="关掉会还原场景外观，但会记住你调好的样子", icon='INFO')
-
-        layout.separator()
-        box = layout.box()
-        box.label(text="工作台外观（直接改，不用切引擎）", icon='MATERIAL')
-        shading = scene.display.shading
-        _prop(box, shading, "light", text="光照")
-        if getattr(shading, "light", "") == 'STUDIO':
-            _prop(box, shading, "studio_light", text="")
-        _prop(box, shading, "color_type", text="颜色")
-        if getattr(shading, "color_type", "") == 'SINGLE':
-            _prop(box, shading, "single_color", text="")
-        _prop(box, shading, "show_shadows", text="阴影")
-        if getattr(shading, "show_shadows", False):
-            sub = box.column(align=True)
-            _prop(sub, shading, "shadow_intensity", text="阴影强度", slider=True)
-
-        _prop(box, shading, "show_cavity", text="腔体")
-        if getattr(shading, "show_cavity", False):
-            sub = box.column(align=True)
-            _prop(sub, shading, "cavity_type", text="类型")
-            cavity_type = getattr(shading, "cavity_type", "")
-            if cavity_type in {'WORLD', 'BOTH'}:
-                _prop(sub, shading, "cavity_ridge_factor", text="世界 脊", slider=True)
-                _prop(sub, shading, "cavity_valley_factor", text="世界 谷", slider=True)
-            if cavity_type in {'SCREEN', 'BOTH'}:
-                _prop(sub, shading, "curvature_ridge_factor", text="屏幕 脊", slider=True)
-                _prop(sub, shading, "curvature_valley_factor", text="屏幕 谷", slider=True)
-            row = sub.row(align=True)
-            _prop(row, settings, "cavity_preset_ridge", text="预设 脊")
-            _prop(row, settings, "cavity_preset_valley", text="谷")
-            sub.row(align=True).operator("wqr.apply_cavity_preset", icon='CHECKMARK')
-            sub.row(align=True).prop(settings, "apply_cavity_preset")
-
-        _prop(box, shading, "show_object_outline", text="描边")
-        _prop(box, scene.display, "render_aa", text="抗锯齿")
-
-        layout.separator()
-        _prop(layout, settings, "restore_settings")
-        col = layout.column()
-        col.scale_y = 0.9
-        col.label(text="换个结果不满意？先调上面外观再重渲", icon='INFO')
-        col.label(text="引擎式渲染仅在需要 Freestyle 时用", icon='INFO')
+        _draw_status_box(layout, scene, settings)
+        _draw_render_box(layout, scene, settings)
+        _draw_preview_box(layout, scene, settings)
+        _draw_shading_box(layout, scene, settings)
+        _draw_footer(layout, scene, settings)
 
         # 预览开着时，每次面板重绘都把外观推给视口 → 改哪个参数都立刻可见。
         # 只写有差异的值，重复重绘不会互相触发死循环。
+        # （工作台外观的内建属性挂不上 update 回调，只能借重绘时机同步；
+        #   实测单次 0.0135 ms，占一帧预算 0.08%）
         if settings.preview_on:
             if _PREVIEW.get("active"):
                 _push_shading(scene)
@@ -942,10 +985,7 @@ _CLASSES = (
 @bpy.app.handlers.persistent
 def _on_file_load(*_args):
     """换文件后预览状态会失真，直接作废（视口保持当时的样子，不再尝试还原）。"""
-    _PREVIEW["active"] = False
-    _PREVIEW["shading"] = None
-    _PREVIEW["display"] = None
-    _PREVIEW["spaces"] = None
+    _reset_preview_state()
 
 
 def register():
@@ -965,10 +1005,7 @@ def unregister():
                 print("[工作台快渲] 卸载还原时未能写回：", failed)
         except Exception as exc:
             print("[工作台快渲] 卸载还原失败：", exc)
-            _PREVIEW["active"] = False
-            _PREVIEW["shading"] = None
-            _PREVIEW["display"] = None
-            _PREVIEW["spaces"] = None
+            _reset_preview_state()
     if hasattr(bpy.types.Scene, "wqr"):
         del bpy.types.Scene.wqr
     for cls in reversed(_CLASSES):

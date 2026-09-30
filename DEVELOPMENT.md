@@ -40,6 +40,7 @@ blender-addons/
 │   └── workbench_quick_render.py
 └── docs/
     ├── 架构.md                # 工作台快渲的架构说明（数据流 / 分层 / 还原语义）
+    ├── 技术债与重构计划.md     # 审计结论与受控重构记录（v1.6.0 已按此执行）
     └── 问题记录/              # 一坑一篇
         ├── 插件扫描不到-bl_info空行.md
         ├── 预览还原-枚举属性丢失.md
@@ -58,12 +59,14 @@ blender-addons/
 
 | 插件 | 文件 | 版本 | 架构与实现 |
 |---|---|---|---|
-| **工作台快渲**<br>Workbench Quick Look | [`addons/workbench_quick_render.py`](./addons/workbench_quick_render.py) | v1.5.0 | [`docs/架构.md`](./docs/架构.md) |
+| **工作台快渲**<br>Workbench Quick Look | [`addons/workbench_quick_render.py`](./addons/workbench_quick_render.py) | v1.6.0 | [`docs/架构.md`](./docs/架构.md) |
 
 ### 工作台快渲 · 一句话
 
 设好相机后一键出工作台（Workbench）风格的预览图 / 动画，**全程不切换渲染引擎**。
 三个按钮（看一眼 / 渲染当前帧 / 渲染动画）+ 一个「实时预览」开关 + **预览外观记忆**（含抗锯齿）+ 腔体预设 0.3。
+v1.6.0 做过一轮**受控重构**（渲染编排收敛 + 面板拆分），行为与 v1.5.0 完全一致，
+审计与判据见 [`docs/技术债与重构计划.md`](./docs/技术债与重构计划.md)。
 
 ## 问题索引
 
@@ -88,6 +91,7 @@ blender-addons/
 | 改了功能 | `docs/架构.md` 追加 / 更新对应说明 |
 | 踩坑并解决 | `docs/问题记录/` 加一篇（一坑一篇）→ 收尾时提炼到经验库 |
 | 发版 | 插件内 `bl_info["version"]` 升版本 + `CHANGELOG.md` 加节 + README 一览表更新 |
+| **动结构 / 重构** | 先读 `docs/技术债与重构计划.md` 第五节「动手前的固定动作」：跑基线 → 改 → 重跑（须 `FAILS 0`）→ `radon` 复核指标 |
 | 约定 / 坑变化 | `AGENTS.md` 更新，或新增 `rules/` 文件 |
 | 任何提交后 | 更新 `AGENTS.md` 顶部的**文档基线行**（日期 + 新 commit hash） |
 

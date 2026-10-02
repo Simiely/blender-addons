@@ -7,6 +7,10 @@ __pycache__/
 build/
 *.zip
 
+# 例外：SketchUp Importer 是「预编译包目录」形态的第三方插件，必须以 zip 进仓
+#（它不是本仓库自研插件，也不是打包产物，故不放行上面的 *.zip 规则）
+!addons/sketchup_importer.zip
+
 # 系统文件
 .DS_Store
 Thumbs.db

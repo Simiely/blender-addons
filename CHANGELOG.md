@@ -4,6 +4,43 @@
 
 ---
 
+## 仓库 · 2026-10-02
+
+**插件集扩容**：把原先散落在 5 个独立仓库的插件全部收敛进本仓库，从「1 个插件」变成「6 个」。
+
+### 迁入的插件
+
+| 模块 | 名称 | 版本 | 来自原仓库 | 状态 |
+|---|---|---|---|---|
+| `empty_align_center` | 对象轴与居中工具 | 1.5.4 | `blender-empty-align-center` | ✅ 稳定 |
+| `mesh_face_sorter` | Blender 网格排序器 | 1.7.0 | `blender-mesh-face-sorter` | ✅ 稳定 |
+| `sketchup_importer` | SketchUp Importer | 0.27.0 | `blender-skp-importer` | ✅ 稳定（第三方修改版） |
+| `intersect_quads_builder` | 交点四边面生成器 | 0.2.0 | `blender-intersect-quads-builder` | ⚠️ WIP |
+| `blender_car_mesh_optimizer` | Car Mesh Optimizer | 3.4.0 | `blender-car-mesh-optimizer` | ⚠️ WIP |
+
+### 本次改动
+
+- **README 重写**：「插件一览」扩为 6 行表格，加了**状态列**（✅/⚠️ WIP）、
+  **兼容版本列**、**插件位置速查表**（侧栏标签名），安装方式按「单文件 / 需解压」分开写，
+  每个插件补了「它解决的问题」段落
+- **`.gitignore` 放行一个例外**：原有 `*.zip` 规则会连 `addons/sketchup_importer.zip` 一起排除
+  （那条规则本意是排除 Blender 打包产物）。加了否定规则 `!addons/sketchup_importer.zip`
+  并注明理由
+- **`intersect_quads_builder` UI 本地化**：原 `bl_label` / `bl_category` / `bl_info["location"]`
+  是英文（`Intersect Quads`），按 AGENTS.md「UI 标签用中文」约定改为
+  「交点四边面生成器」/「交点四边面」，location 统一为 `3D 视图 > 侧边栏(N) > 交点四边面`。
+  功能代码未动
+- **旧仓库保留归档**：5 个原独立仓库**不删除**，README 顶部加「已迁至 blender-addons」跳转说明，
+  保留只读
+
+### 为什么把 WIP 也迁进来
+
+用户明确要求「全部迁移进来，统一管理」。**统一管理不等于已可交付**——
+所以 README 用 ⚠️ 标记 + 独立段落写明风险，并强调 WIP 插件会直接改动网格数据、
+须先在测试文件验证。原仓库 README 里的「请勿安装」警示没有被弱化，而是搬到了本仓库 README。
+
+---
+
 ## 仓库 · 2026-09-30
 
 **建库**：把原先「一个插件一个仓库」的做法收敛为**一个仓库管全部插件**。

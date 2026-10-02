@@ -1,0 +1,7 @@
+# 行尾统一：仓库内以 LF 存储，工作区检出为 CRLF（Windows 习惯）
+* text=auto eol=crlf
+
+# 二进制文件不做行尾转换
+*.zip binary
+*.dll binary
+*.pyd binary

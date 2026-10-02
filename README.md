@@ -1,37 +1,74 @@
 # Blender 插件集（Blender Addons）
 
-> 个人的 Blender 插件集合 —— 每个插件一个**单文件 `.py`**，下载即装，无第三方依赖。
+> 个人的 Blender 插件集合 —— **一个仓库管全部插件**。自研插件每个一个**单文件 `.py`**，下载即装、无第三方依赖。
 
-![Blender](https://img.shields.io/badge/Blender-4.0%2B-blue)
-![Python](https://img.shields.io/badge/Python-3.11%2B-green)
+![Blender](https://img.shields.io/badge/Blender-2.80%2B-blue)
+![Python](https://img.shields.io/badge/Python-3.7%2B-green)
 ![License](https://img.shields.io/badge/License-GPL--3.0--or--later-orange)
 
 ## 插件一览
 
-| 插件 | 说明 | 版本 | 安装文件 |
-|---|---|---|---|
-| **工作台快渲**<br>Workbench Quick Look | 设好相机后直接出工作台（Workbench）风格的预览图 / 动画。**全程不切换渲染引擎**，Cycles 的设置原封不动 | v1.6.0 | [`addons/workbench_quick_render.py`](./addons/workbench_quick_render.py) |
+| # | 插件 | 说明 | 版本 | 兼容 | 安装文件 |
+|---|---|---|---|---|---|
+| 1 | **工作台快渲**<br>Workbench Quick Look | 设好相机后直接出工作台（Workbench）风格的预览图 / 动画。**全程不切换渲染引擎**，Cycles 的设置原封不动 | v1.6.0 | 4.0+ | [`workbench_quick_render.py`](./addons/workbench_quick_render.py) |
+| 2 | **对象轴与居中工具**<br>Empty Align Center | 居中（自身+子集）/ 轴居中贴底 / 轴居中贴底并落地。均含子集、不限类型，**物体网格不动只改原点** | v1.5.4 | 2.93+ | [`empty_align_center.py`](./addons/empty_align_center.py) |
+| 3 | **网格排序器**<br>Mesh Face Sorter | 按**面数从高到低**排列场景中所有网格体，便于逐个检查与处理 | v1.7.0 | 3.0+ | [`mesh_face_sorter.py`](./addons/mesh_face_sorter.py) |
+| 4 | **SketchUp Importer** | 导入 `.skp` 模型到 Blender（官方插件的 5.x 兼容修改版，含 cp37~cp314 多版二进制） | v0.27.0 | 2.80+ | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) ⚠️ **需解压** |
+| 5 | **交点四边面生成器**<br>Intersect Quads Builder | 用选面作切割面，生成交点处的四边面（修补建模用） | v0.2.0 | 2.80+ | [`intersect_quads_builder.py`](./addons/intersect_quads_builder.py) ⚠️ **WIP** |
+| 6 | **车模网格减面**<br>Car Mesh Optimizer | 车模高精度网格减面：分离松散块 → 逐个减面 → 合并焊接 | v3.4.0 | 3.6+ | [`blender_car_mesh_optimizer.py`](./addons/blender_car_mesh_optimizer.py) ⚠️ **WIP** |
 
-> 加插件 = 往 `addons/` 丢一个 `.py` + 上表加一行。命名与提交约定见 [AGENTS.md](./AGENTS.md)。
+> **状态说明**：✅ 稳定可用　⚠️ **WIP 开发中，可能不稳定或数据损坏，请勿用于正式项目**
+>
+> 5、6 号仍在开发（原独立仓库 README 标注「请勿安装」）。迁入本仓库是为了**统一管理**，
+> 不代表它们已可交付 —— 用之前请自行在测试文件上验证。
 
 ## 安装
 
-### 方式一：从磁盘安装（推荐）
+### 方式一：从磁盘安装（推荐，仅限单文件 `.py`）
 
 1. 下载 `addons/` 下对应插件的 `.py` 文件
 2. Blender → 编辑 → 偏好设置 → **插件**
 3. 右上角下拉 → **从磁盘安装** → **安装旧式插件（Install Legacy Add-on）**
 4. 选中那个 `.py` → 勾选启用
 
-### 方式二：放进脚本目录
+> 方式一适用于 **1、2、3、5、6 号**（都是单文件 legacy addon）。
 
-把 `.py` 复制到 Blender 的 `scripts/addons/`（或你自定义脚本目录下的 `addons/` 子目录），重启 Blender，再到偏好设置里勾选启用。
+### 方式二：放进脚本目录（通用于全部插件）
 
-> 所有插件都是**单文件 legacy addon**：纯 Python + Blender 内置 `bpy` / `mathutils`，**无第三方依赖** —— 不用解压、不用装轮子、不用配环境。
+把 `.py` 复制到 Blender 的 `scripts/addons/`，重启 Blender，再在偏好设置里勾选启用。
+
+Windows 用户路径通常是：
+```
+C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号>\scripts\addons\
+```
+
+### ⚠️ SketchUp Importer（4 号）必须单独处理
+
+它是**包目录形态**（一个文件夹里含 `.pyd` / `.dll`），不是单文件，走不了上面两种方式：
+
+1. 下载 [`sketchup_importer.zip`](./addons/sketchup_importer.zip)
+2. **解压**到 Blender 的 `scripts/addons/` 目录 —— 解压后应得到 `addons/sketchup_importer/` 文件夹
+3. 重启 Blender → 偏好设置 → 插件 → 勾选 **SketchUp Importer**
+4. 使用：文件 → 导入 → **SketchUp Importer (.skp)**
+
+> 也可以直接在偏好设置里用「从磁盘安装」直接选那个 `.zip`，Blender 会自动完成解压。
+
+## 插件位置速查
+
+装好后，插件面板都在 **3D 视口按 `N` → 右侧边栏**：
+
+| 插件 | 侧栏标签 |
+|---|---|
+| 工作台快渲 | `快渲` |
+| 对象轴与居中工具 | `Tool` |
+| 网格排序器 | `网格排序器` |
+| SketchUp Importer | 无面板，走 文件 → 导入 菜单 |
+| 交点四边面生成器 | `交点四边面` |
+| 车模网格减面 | `车模减面` |
 
 ## 快速开始
 
-### 工作台快渲（Workbench Quick Look）
+### 1. 工作台快渲（Workbench Quick Look）
 
 **它解决的问题**：设好相机后想按**工作台引擎**的样子出图，但每次都要「切到工作台 → 渲染 → 切回 Cycles」，来回折腾。
 
@@ -46,7 +83,44 @@
    想让它永久留在场景里，点 **「套用这个预设」**
 5. 不想留记忆了？点记忆那行右侧的垃圾桶图标（**忘记记住的外观**），下次开预览重新用出厂预设
 
-完整参数说明与实现原理见 [DEVELOPMENT.md](./DEVELOPMENT.md)。
+### 2. 对象轴与居中工具（Empty Align Center）
+
+**它解决的问题**：模型导入后原点乱飞、子物体跟着漂；想「贴底」「落地」却得手动算偏移。
+
+三种模式，都支持**含子集**、**不限对象类型**：
+
+- **居中** —— 把选中对象的原点移到自身包围盒中心
+- **轴居中贴底** —— 原点移到包围盒底面中心（X/Y 居中，Z 贴底）
+- **轴居中贴底并落地** —— 贴底后直接落到当前地面高度（Z = 0）
+
+> 关键设计：**只改原点，物体网格数据完全不动**。所以是「整理」而不是「变形」——
+> 网格没动，贴图UV、修改器、动画都不会因此错位。
+
+### 3. 网格排序器（Mesh Face Sorter）
+
+**它解决的问题**：场景里几十个网格体，想找出「哪个面数最高、最该先减」时只能一个个数。
+
+一键把场景中所有网格体**按面数从高到低重排**，从上往下数就是优先级。
+适合配合减面类插件（仓库里的 6 号车模减面）分批处理。
+
+### 4. SketchUp Importer
+
+导入 `.skp` 文件。官方插件在 Blender 5.x 上的兼容问题已在此版修复（含 cp313/cp314 二进制）。
+
+若导入报错，注意菜单路径是 **文件 → 导入 → SketchUp Importer**，不是 Blender 原生的 `.fbx` 导入器。
+
+### 5. 交点四边面生成器（WIP）
+
+选中若干面作为**切割面** → 生成在这些面交点处的四边面，用于修补不干净的布尔/相交拓扑。
+
+流程：**添加选中为切割面** → **生成四边面** →（可选）**移除切割面** / **清空切割面**。
+
+### 6. 车模网格减面（WIP）
+
+针对高精度车模的减面流程：**选取特征点** → **按密度选点** → **确认选取** → **生成优化网格**。
+另提供**快速预设**一键跑通流程。
+
+> ⚠️ 这两个 WIP 插件会**直接改动网格数据**。请务必先在新文件里测试，确认无误再用于正式项目。
 
 ## 目录结构
 
@@ -56,8 +130,14 @@ blender-addons/
 ├── AGENTS.md          # AI / 协作规则与关键坑
 ├── DEVELOPMENT.md     # 仓库设计取舍 + 各插件架构与问题记录
 ├── CHANGELOG.md       # 版本变更记录（按插件分节）
-├── addons/            # 插件本体：每个插件一个单文件 .py
-│   └── workbench_quick_render.py
+├── .gitignore
+├── addons/            # 插件本体
+│   ├── workbench_quick_render.py        # 单文件
+│   ├── empty_align_center.py            # 单文件
+│   ├── mesh_face_sorter.py              # 单文件
+│   ├── intersect_quads_builder.py       # 单文件（WIP）
+│   ├── blender_car_mesh_optimizer.py    # 单文件（WIP）
+│   └── sketchup_importer.zip            # 包目录，需解压（第三方修改版）
 └── docs/              # 生长出来的详细文档（超过阈值才拆，不提前设计）
     ├── 架构.md
     ├── 技术债与重构计划.md
@@ -71,3 +151,9 @@ blender-addons/
 - **四件套各管一类读者**：`README`（用户与访客）/ `AGENTS`（AI 与未来的自己）/ `DEVELOPMENT`（开发者）/ `CHANGELOG`（所有人）
 - **生长式拆分**：`docs/`、`rules/` 目录**长出来的**，超过拆分阈值才建，不提前设计
 - **文档基线**记在 [AGENTS.md](./AGENTS.md) 顶部（日期 + commit hash），支持断点续传
+
+## 相关仓库
+
+本仓库为插件的**唯一维护处**。以下同名仓库已归档，只读保留，勿再提交：
+
+`blender-empty-align-center` · `blender-mesh-face-sorter` · `blender-car-mesh-optimizer` · `blender-intersect-quads-builder` · `blender-skp-importer`

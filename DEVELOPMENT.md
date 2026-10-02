@@ -6,8 +6,11 @@
 
 ## 项目概览
 
-个人 Blender 插件集：**一个仓库管全部插件**。每个插件是**单文件 legacy addon**，
+个人 Blender 插件集：**一个仓库管全部插件**。每个自研插件是**单文件 legacy addon**，
 放在 `addons/`，文件名即模块名。
+
+> **例外**：`sketchup_importer` 是**包目录形态**（含 `.pyd` / `.dll` 多版本二进制），
+> 以 `sketchup_importer.zip` 进仓，安装时需解压。见下文「两类插件形态」。
 
 ### 为什么是单文件（设计取舍）
 
@@ -27,6 +30,22 @@
 | **一个仓库多个单文件 `.py`** | —— | ✓ | 兼顾「统一管理」与「单文件即装」；真出现共享代码再按生长式原则升级 |
 | 自建可订阅扩展源 | 社区私有扩展源（`index.json` + 静态托管） | 暂缓 | 需先把插件转成 manifest 形式，见「升级路径」 |
 
+### 两类插件形态（务必分清）
+
+仓库里现在有两种形态，**安装方式不同**，写文档 / 回答用户时不能混为一谈：
+
+| | 自研插件（5 个） | SketchUp Importer（1 个） |
+|---|---|---|
+| 形态 | 单文件 `.py` | 包目录，多版本 `.pyd` + `.dll` |
+| 交付 | 直接下载 `.py` | `sketchup_importer.zip`，**需解压** |
+| 安装 | 「从磁盘安装 → 安装旧式插件」选 `.py`，或丢进 `scripts/addons/` | 解压到 `scripts/addons/`，或直接对 zip 走「从磁盘安装」 |
+| 依赖 | 纯 `bpy` / `mathutils` | SketchUpAPI.dll（随包分发） |
+| 归属 | 本仓库自研 | **第三方插件的 5.x 兼容修改版**，非自研 |
+
+**为什么 zip 要放行 `.gitignore`**：原 `.gitignore` 有 `*.zip`，本意是排除 Blender 打包产物
+（`build/` 下的东西）。但 SketchUp 插件必须以 zip 进仓，故加否定规则
+`!addons/sketchup_importer.zip` 并注明理由。**新增 zip 类交付物时要留意这条。**
+
 ## 仓库结构
 
 ```
@@ -35,9 +54,14 @@ blender-addons/
 ├── AGENTS.md                  # AI / 协作规则与关键坑（顶部有文档基线行）
 ├── DEVELOPMENT.md             # 本文件：仓库说明与索引
 ├── CHANGELOG.md               # 版本变更记录（按插件分节）
-├── .gitignore
-├── addons/                    # 插件本体：每个插件一个单文件 .py
-│   └── workbench_quick_render.py
+├── .gitignore                 # 含 !addons/sketchup_importer.zip 例外
+├── addons/                    # 插件本体
+│   ├── workbench_quick_render.py        # 单文件 · 稳定
+│   ├── empty_align_center.py            # 单文件 · 稳定
+│   ├── mesh_face_sorter.py              # 单文件 · 稳定
+│   ├── intersect_quads_builder.py       # 单文件 · WIP
+│   ├── blender_car_mesh_optimizer.py    # 单文件 · WIP
+│   └── sketchup_importer.zip            # 包目录 · 需解压 · 第三方修改版
 └── docs/
     ├── 架构.md                # 工作台快渲的架构说明（数据流 / 分层 / 还原语义）
     ├── 技术债与重构计划.md     # 审计结论与受控重构记录（v1.6.0 已按此执行）
@@ -57,16 +81,43 @@ blender-addons/
 
 ## 插件清单
 
-| 插件 | 文件 | 版本 | 架构与实现 |
-|---|---|---|---|
-| **工作台快渲**<br>Workbench Quick Look | [`addons/workbench_quick_render.py`](./addons/workbench_quick_render.py) | v1.6.0 | [`docs/架构.md`](./docs/架构.md) |
+| 插件 | 文件 | 版本 | 形态 | 状态 | 架构与实现 |
+|---|---|---|---|---|---|
+| **工作台快渲**<br>Workbench Quick Look | [`workbench_quick_render.py`](./addons/workbench_quick_render.py) | v1.6.0 | 单文件 | ✅ | [`docs/架构.md`](./docs/架构.md) |
+| **对象轴与居中工具**<br>Empty Align Center | [`empty_align_center.py`](./addons/empty_align_center.py) | v1.5.4 | 单文件 | ✅ | 见下 |
+| **网格排序器**<br>Mesh Face Sorter | [`mesh_face_sorter.py`](./addons/mesh_face_sorter.py) | v1.7.0 | 单文件 | ✅ | 见下 |
+| **SketchUp Importer** | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) | v0.27.0 | 包目录 | ✅ | 第三方修改版 |
+| **交点四边面生成器**<br>Intersect Quads Builder | [`intersect_quads_builder.py`](./addons/intersect_quads_builder.py) | v0.2.0 | 单文件 | ⚠️ WIP | 见下 |
+| **车模网格减面**<br>Car Mesh Optimizer | [`blender_car_mesh_optimizer.py`](./addons/blender_car_mesh_optimizer.py) | v3.4.0 | 单文件 | ⚠️ WIP | 见下 |
 
-### 工作台快渲 · 一句话
+> ✅ 稳定可用　⚠️ WIP 开发中，会直接改动网格数据，**须先在测试文件验证**。
+> 详细安装方式见 [README](./README.md#安装)。
 
-设好相机后一键出工作台（Workbench）风格的预览图 / 动画，**全程不切换渲染引擎**。
-三个按钮（看一眼 / 渲染当前帧 / 渲染动画）+ 一个「实时预览」开关 + **预览外观记忆**（含抗锯齿）+ 腔体预设 0.3。
-v1.6.0 做过一轮**受控重构**（渲染编排收敛 + 面板拆分），行为与 v1.5.0 完全一致，
-审计与判据见 [`docs/技术债与重构计划.md`](./docs/技术债与重构计划.md)。
+### 各插件 · 一句话
+
+- **工作台快渲**：设好相机后一键出工作台（Workbench）风格的预览图 / 动画，
+  **全程不切换渲染引擎**。三个按钮（看一眼 / 渲染当前帧 / 渲染动画）+ 一个「实时预览」开关 +
+  **预览外观记忆**（含抗锯齿）+ 腔体预设 0.3。v1.6.0 做过一轮**受控重构**
+  （渲染编排收敛 + 面板拆分），行为与 v1.5.0 完全一致，
+  审计与判据见 [`docs/技术债与重构计划.md`](./docs/技术债与重构计划.md)。
+
+- **对象轴与居中工具**：居中（自身+子集）/ 轴居中贴底 / 轴居中贴底并落地，均含子集、不限类型。
+  关键设计是**只改原点、网格数据完全不动** —— 属于「整理」而非「变形」，
+  所以不会破坏 UV / 修改器 / 动画。
+
+- **网格排序器**：按面数从高到低重排场景中所有网格体，让「先减哪个」一目了然。
+  适合配合车模减面一类插件分批处理。
+
+- **SketchUp Importer**：导入 `.skp`。官方插件在 Blender 5.x 上的兼容问题已修复，
+  包内含 cp37~cp314 多版 `.pyd`。**非自研**，是第三方插件的兼容修改版。
+
+- **交点四边面生成器**（WIP）：选若干面作切割面 → 生成交点处四边面，修补不干净的布尔/相交拓扑。
+  2026-10-02 迁入时把 `bl_label` / `bl_category` / `location` 从英文 `Intersect Quads`
+  改为中文「交点四边面」，**功能代码未动**。
+
+- **车模网格减面**（WIP）：选取特征点 → 按密度选点 → 确认选取 → 生成优化网格，
+  另提供快速预设。管线是「分离松散块 → 逐个减面 → 合并焊接」。
+
 
 ## 问题索引
 

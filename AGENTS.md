@@ -5,10 +5,15 @@
 
 ## 技术栈
 
-- Blender **4.0 ~ 5.x**（验证环境：Blender 5.2.2 LTS，内置 Python 3.13）
-- 纯 Python + Blender 内置 `bpy` / `mathutils`；**无任何第三方依赖**
+- Blender **2.80 ~ 5.x**（验证环境：Blender 5.2.2 LTS，内置 Python 3.13）
+  - 各插件的**最低版本看自己的 `bl_info["blender"]`**：快渲 4.0+、居中 2.93+、
+    排序器 3.0+、交点四边面 2.80+、车模减面 3.6+
+- 自研插件：纯 Python + Blender 内置 `bpy` / `mathutils`；**无任何第三方依赖**
 - **单文件 legacy addon**（完整 `bl_info`，不用 `blender_manifest.toml`）
 - 交付路径：`addons/<插件名>.py`，**文件名 = 模块名**（`workbench_quick_render.py` → `workbench_quick_render`）
+- **唯一例外**：`addons/sketchup_importer.zip` 是包目录形态的**第三方插件修改版**
+  （含 cp37~cp314 多版 `.pyd` + `SketchUpAPI.dll`），不适用上面两条。
+  它需要 `.gitignore` 里的 `!addons/sketchup_importer.zip` 放行才能进仓
 
 ## 关键坑（务必先读，都是代码里看不出来的）
 
@@ -47,6 +52,37 @@
 - 面板里取属性用一层 `hasattr` 包住，跨版本差异不至于把面板画崩
 - 新增插件：加 `.py` → README「插件一览」加行 → CHANGELOG 加节 → DEVELOPMENT 加章节
 - **公开仓库红线**：不收录凭据（token / 密码）、个人信息、**本地绝对路径**、未公开的项目细节
+
+## 迁入插件的检查清单
+
+从别的仓库往 `addons/` 搬文件时，**逐条过一遍**（每条都对应一个真实踩过的坑）：
+
+| 检查 | 怎么查 | 不合格的后果 |
+|---|---|---|
+| **无 BOM** | 文件头不是 `EF BB BF` | `SyntaxError: invalid non-printable character U+FEFF`，插件直接不加载 |
+| **`bl_info` 后紧跟空行** | 找 `bl_info` 字典的**结束行** `}`，下一行须为空 | 快速扫描器读到空行才停，紧跟多行 docstring 会被截成三引号未闭合 → 插件**根本不出现在偏好设置列表**，但 `enable()` 照样成功（极具迷惑性） |
+| 语法能过 | `ast.parse(src)` | 注册时炸 |
+| `_CLASSES` 无遗漏 | 每个 Operator 类名都在 `_CLASSES` 里 | `register()` 不注册它，面板直接报错 |
+| **UI 标签是中文** | `bl_label` / `bl_category` / `bl_info["location"]` | 违反本仓库约定（`bl_category` 才是侧栏显示名，`bl_label` 只是窗口标题） |
+| **无本地绝对路径 / 凭据** | 搜 `C:\` `D:\` `/Users/` `ghp_` | 公开仓库红线 |
+| 无头能加载 | 见下方命令 | 装完才发现根本 import 不了 |
+
+```bash
+# 语法检查（全部插件）
+for f in addons/*.py; do python -m py_compile "$f" && echo "OK $f"; done
+```
+
+**注意 `bl_info` 空行那条**：检查时要定位 `bl_info = {` 之后**第一个以 `}` 开头的行**
+（字典结束），看它的**下一行**是否为空。直接看 `bl_info = {` 的下一行是错的 ——
+那是字典内容的第一行（`"name": ...`），会得到假阳性。
+
+### 无头验证：启用状态必须冷启动复查
+
+`blender -b --python x.py` 里调 `addon_utils.enable(..., persistent=True)`，
+**进程退出后启用状态会丢失**。必须在脚本里显式 `bpy.ops.wm.save_userpref()` 才真正写入
+`config/userpref.blend`。验证也要**开新进程冷启动**再 `addon_utils.check()` ——
+同进程内查是假阳性。
+
 
 ## 常用命令
 

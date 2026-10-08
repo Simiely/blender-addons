@@ -173,7 +173,7 @@ blender-addons/
 | 原仓库 | 处理结果 | 对应内容 |
 |---|---|---|
 | `blender-empty-align-center` | 🗄️ 已归档（只读） | `addons/empty_align_center.py` |
-| `blender-mesh-face-sorter` | 🗄️ 已归档（只读） | `addons/mesh_face_sorter.py` |
+| `blender-mesh-face-sorter` | 🗄️ 已归档·公开（只读） | `addons/mesh_face_sorter.py` |
 | `blender-skp-importer` | 🗄️ 已归档（只读） | `addons/sketchup_importer.zip`；其内含的 **Import MAX（io_scene_max）** 也已并入 `addons/io_scene_max/` |
 | `blender-car-mesh-optimizer` | 🗄️ 已删除 | 内容已并入 `addons/blender_car_mesh_optimizer.py` |
 | `blender-intersect-quads-builder` | 🗄️ 已删除 | 内容已并入 `addons/intersect_quads_builder.py` |

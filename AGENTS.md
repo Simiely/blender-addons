@@ -1,6 +1,6 @@
 # AGENTS.md · 项目规则
 
-> 📌 **文档基线**：2026-10-02（commit `49d2a6c`）插件集扩容：5 个插件迁入，含 zip 形态例外
+> 📌 **文档基线**：2026-10-08（commit `bdd0706`）并入 Import MAX + 归档 3 个原独立仓库
 > **更新文档/代码后，请更新此行**（日期 + 新 commit hash），并在 CHANGELOG 追加版本
 
 ## 技术栈
@@ -11,9 +11,9 @@
 - 自研插件：纯 Python + Blender 内置 `bpy` / `mathutils`；**无任何第三方依赖**
 - **单文件 legacy addon**（完整 `bl_info`，不用 `blender_manifest.toml`）
 - 交付路径：`addons/<插件名>.py`，**文件名 = 模块名**（`workbench_quick_render.py` → `workbench_quick_render`）
-- **唯一例外**：`addons/sketchup_importer.zip` 是包目录形态的**第三方插件修改版**
-  （含 cp37~cp314 多版 `.pyd` + `SketchUpAPI.dll`），不适用上面两条。
-  它需要 `.gitignore` 里的 `!addons/sketchup_importer.zip` 放行才能进仓
+- **唯一例外（包目录形态 · 第三方）**：`addons/sketchup_importer.zip` 与 `addons/io_scene_max/` 都是**第三方插件**，
+  不适用上面「单文件」两条。`sketchup_importer.zip`（含 cp37~cp314 多版 `.pyd` + `SketchUpAPI.dll`）需 `.gitignore` 里的
+  `!addons/sketchup_importer.zip` 放行才能进仓；`io_scene_max/`（Import MAX，含 `blender_manifest.toml`）是官方扩展包目录，无需放行。
 
 ## 关键坑（务必先读，都是代码里看不出来的）
 

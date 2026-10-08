@@ -16,6 +16,7 @@
 | 4 | **SketchUp Importer** | 导入 `.skp` 模型到 Blender（官方插件的 5.x 兼容修改版，含 cp37~cp314 多版二进制） | v0.27.0 | 2.80+ | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) ⚠️ **需解压** |
 | 5 | **交点四边面生成器**<br>Intersect Quads Builder | 用选面作切割面，生成交点处的四边面（修补建模用） | v0.2.0 | 2.80+ | [`intersect_quads_builder.py`](./addons/intersect_quads_builder.py) ⚠️ **WIP** |
 | 6 | **车模网格减面**<br>Car Mesh Optimizer | 车模高精度网格减面：分离松散块 → 逐个减面 → 合并焊接 | v3.4.0 | 3.6+ | [`blender_car_mesh_optimizer.py`](./addons/blender_car_mesh_optimizer.py) ⚠️ **WIP** |
+| 7 | **Import MAX**<br>Import Autodesk MAX | 导入 `.max`（Autodesk 3ds Max）场景：网格 + 材质，第三方插件的 Blender 4.2+ 兼容版 | v1.9.2 | 4.2+ | [`io_scene_max/`](./addons/io_scene_max) ⚠️ **包目录·第三方** |
 
 > **状态说明**：✅ 稳定可用　⚠️ **WIP 开发中，可能不稳定或数据损坏，请勿用于正式项目**
 >
@@ -53,6 +54,17 @@ C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号
 
 > 也可以直接在偏好设置里用「从磁盘安装」直接选那个 `.zip`，Blender 会自动完成解压。
 
+### ⚠️ Import MAX（7 号）是包目录插件
+
+它和 SketchUp Importer 一样是**包目录形态**（含 `blender_manifest.toml` + `import_max.py`），不是单文件：
+
+1. 把 `addons/io_scene_max/` **整个文件夹**复制到 Blender 的 `scripts/addons/`（或扩展目录 `extensions/user_default/`）
+2. 重启 Blender → 偏好设置 → 插件 → 搜索 `Autodesk MAX` → 勾选 **Import Autodesk MAX (.max)**
+3. 使用：文件 → 导入 → **Autodesk MAX (.max)**
+
+> 它是第三方插件（nrgsille 的 io_scene_max v1.9.2），非本仓库自研；含官方扩展 manifest，
+> 也可把 `io_scene_max/` 打包成 zip 走「扩展 → 从磁盘安装」。
+
 ## 插件位置速查
 
 装好后，插件面板都在 **3D 视口按 `N` → 右侧边栏**：
@@ -65,6 +77,7 @@ C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号
 | SketchUp Importer | 无面板，走 文件 → 导入 菜单 |
 | 交点四边面生成器 | `交点四边面` |
 | 车模网格减面 | `车模减面` |
+| Import MAX | 无面板，走 文件 → 导入 → Autodesk MAX (.max) |
 
 ## 快速开始
 
@@ -137,7 +150,8 @@ blender-addons/
 │   ├── mesh_face_sorter.py              # 单文件
 │   ├── intersect_quads_builder.py       # 单文件（WIP）
 │   ├── blender_car_mesh_optimizer.py    # 单文件（WIP）
-│   └── sketchup_importer.zip            # 包目录，需解压（第三方修改版）
+│   ├── sketchup_importer.zip            # 包目录，需解压（第三方修改版）
+│   └── io_scene_max/                   # 包目录（第三方 Import MAX，含 blender_manifest.toml）
 └── docs/              # 生长出来的详细文档（超过阈值才拆，不提前设计）
     ├── 架构.md
     ├── 技术债与重构计划.md
@@ -154,6 +168,12 @@ blender-addons/
 
 ## 相关仓库
 
-本仓库为插件的**唯一维护处**。以下同名仓库已归档，只读保留，勿再提交：
+本仓库为插件的**唯一维护处**。原独立仓库的处理结果如下（内容均已并入本仓库，**本仓库即唯一来源**）：
 
-`blender-empty-align-center` · `blender-mesh-face-sorter` · `blender-car-mesh-optimizer` · `blender-intersect-quads-builder` · `blender-skp-importer`
+| 原仓库 | 处理结果 | 对应内容 |
+|---|---|---|
+| `blender-empty-align-center` | 🗄️ 已归档（只读） | `addons/empty_align_center.py` |
+| `blender-mesh-face-sorter` | 🗄️ 已归档（只读） | `addons/mesh_face_sorter.py` |
+| `blender-skp-importer` | 🗄️ 已归档（只读） | `addons/sketchup_importer.zip`；其内含的 **Import MAX（io_scene_max）** 也已并入 `addons/io_scene_max/` |
+| `blender-car-mesh-optimizer` | 🗄️ 已删除 | 内容已并入 `addons/blender_car_mesh_optimizer.py` |
+| `blender-intersect-quads-builder` | 🗄️ 已删除 | 内容已并入 `addons/intersect_quads_builder.py` |

@@ -11,6 +11,7 @@
 - **并入 Import MAX（io_scene_max v1.9.2）**：原 `blender-skp-importer` 内含的 3ds Max 导入器（第三方插件，含 `blender_manifest.toml` + `import_max.py`）迁入 `addons/io_scene_max/`，与 SketchUp Importer 同属「包目录形态 · 第三方」一类
 - **修正「相关仓库」说明**：原 5 个独立仓库中 `blender-car-mesh-optimizer` / `blender-intersect-quads-builder` 实际已删除（内容此前已并入本仓库），`blender-empty-align-center` / `blender-mesh-face-sorter` / `blender-skp-importer` 现已归档；README 不再谎称「5 个均已归档」
 - **归档 3 个原独立仓库**：`blender-empty-align-center`、`blender-mesh-face-sorter`、`blender-skp-importer` 设为只读归档，本仓库成为唯一维护处
+- **`blender-mesh-face-sorter` 转为公开**：保持只读归档，作为公开参考快照；插件后续维护统一在 blender-addons（单一可编辑来源）
 
 ---
 

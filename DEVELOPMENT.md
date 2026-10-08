@@ -9,8 +9,8 @@
 个人 Blender 插件集：**一个仓库管全部插件**。每个自研插件是**单文件 legacy addon**，
 放在 `addons/`，文件名即模块名。
 
-> **例外**：`sketchup_importer` 是**包目录形态**（含 `.pyd` / `.dll` 多版本二进制），
-> 以 `sketchup_importer.zip` 进仓，安装时需解压。见下文「两类插件形态」。
+> **例外**：`sketchup_importer` 与 `io_scene_max` 是**包目录形态**（第三方插件），
+> 前者以 `sketchup_importer.zip` 进仓（需解压），后者以 `io_scene_max/` 文件夹进仓。见下文「两类插件形态」。
 
 ### 为什么是单文件（设计取舍）
 
@@ -34,13 +34,13 @@
 
 仓库里现在有两种形态，**安装方式不同**，写文档 / 回答用户时不能混为一谈：
 
-| | 自研插件（5 个） | SketchUp Importer（1 个） |
-|---|---|---|
-| 形态 | 单文件 `.py` | 包目录，多版本 `.pyd` + `.dll` |
-| 交付 | 直接下载 `.py` | `sketchup_importer.zip`，**需解压** |
-| 安装 | 「从磁盘安装 → 安装旧式插件」选 `.py`，或丢进 `scripts/addons/` | 解压到 `scripts/addons/`，或直接对 zip 走「从磁盘安装」 |
-| 依赖 | 纯 `bpy` / `mathutils` | SketchUpAPI.dll（随包分发） |
-| 归属 | 本仓库自研 | **第三方插件的 5.x 兼容修改版**，非自研 |
+| | 自研插件（5 个） | SketchUp Importer | Import MAX |
+|---|---|---|---|
+| 形态 | 单文件 `.py` | 包目录，多版本 `.pyd` + `.dll` | 包目录：`blender_manifest.toml` + `import_max.py` |
+| 交付 | 直接下载 `.py` | `sketchup_importer.zip`，**需解压** | `io_scene_max/`（文件夹，可打包 zip） |
+| 安装 | 「从磁盘安装 → 安装旧式插件」选 `.py`，或丢进 `scripts/addons/` | 解压到 `scripts/addons/`，或直接对 zip 走「从磁盘安装」 | 复制文件夹到 `scripts/addons/`（或扩展目录），重启后启用 |
+| 依赖 | 纯 `bpy` / `mathutils` | SketchUpAPI.dll（随包分发） | 无额外依赖 |
+| 归属 | 本仓库自研 | **第三方 5.x 兼容修改版**，非自研 | **第三方插件（nrgsille io_scene_max v1.9.2）**，非自研 |
 
 **为什么 zip 要放行 `.gitignore`**：原 `.gitignore` 有 `*.zip`，本意是排除 Blender 打包产物
 （`build/` 下的东西）。但 SketchUp 插件必须以 zip 进仓，故加否定规则
@@ -61,7 +61,8 @@ blender-addons/
 │   ├── mesh_face_sorter.py              # 单文件 · 稳定
 │   ├── intersect_quads_builder.py       # 单文件 · WIP
 │   ├── blender_car_mesh_optimizer.py    # 单文件 · WIP
-│   └── sketchup_importer.zip            # 包目录 · 需解压 · 第三方修改版
+│   ├── sketchup_importer.zip            # 包目录 · 需解压 · 第三方修改版
+│   └── io_scene_max/                   # 包目录 · 第三方（Import MAX，含 blender_manifest.toml）
 └── docs/
     ├── 架构.md                # 工作台快渲的架构说明（数据流 / 分层 / 还原语义）
     ├── 技术债与重构计划.md     # 审计结论与受控重构记录（v1.6.0 已按此执行）
@@ -89,6 +90,7 @@ blender-addons/
 | **SketchUp Importer** | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) | v0.27.0 | 包目录 | ✅ | 第三方修改版 |
 | **交点四边面生成器**<br>Intersect Quads Builder | [`intersect_quads_builder.py`](./addons/intersect_quads_builder.py) | v0.2.0 | 单文件 | ⚠️ WIP | 见下 |
 | **车模网格减面**<br>Car Mesh Optimizer | [`blender_car_mesh_optimizer.py`](./addons/blender_car_mesh_optimizer.py) | v3.4.0 | 单文件 | ⚠️ WIP | 见下 |
+| **Import MAX**<br>Import Autodesk MAX | [`io_scene_max/`](./addons/io_scene_max) | v1.9.2 | 包目录 | ✅ | 第三方修改版（见下） |
 
 > ✅ 稳定可用　⚠️ WIP 开发中，会直接改动网格数据，**须先在测试文件验证**。
 > 详细安装方式见 [README](./README.md#安装)。
@@ -117,6 +119,9 @@ blender-addons/
 
 - **车模网格减面**（WIP）：选取特征点 → 按密度选点 → 确认选取 → 生成优化网格，
   另提供快速预设。管线是「分离松散块 → 逐个减面 → 合并焊接」。
+
+- **Import MAX**（第三方）：导入 `.max`（Autodesk 3ds Max）场景，含网格与材质；
+  菜单路径 文件 → 导入 → Autodesk MAX (.max)。非自研，是 nrgsille 的 io_scene_max v1.9.2 兼容版。
 
 
 ## 问题索引

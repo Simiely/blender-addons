@@ -168,12 +168,26 @@ blender-addons/
 
 ## 相关仓库
 
-本仓库为插件的**唯一维护处**。原独立仓库的处理结果如下（内容均已并入本仓库，**本仓库即唯一来源**）：
+本仓库为插件的**唯一维护处**。原独立仓库**不做归档**（仓库一旦归档就**完全只读**，issue / PR / Releases 全冻结），
+改为**解冻保留**、标注「历史留档」、**不再维护**；其插件文件与本仓库对应文件**逐字节一致**，
+历史代码与文档留作参考：
 
 | 原仓库 | 处理结果 | 对应内容 |
 |---|---|---|
-| `blender-empty-align-center` | 🗄️ 已归档（只读） | `addons/empty_align_center.py` |
-| `blender-mesh-face-sorter` | 🗄️ 已归档·公开（只读） | `addons/mesh_face_sorter.py` |
-| `blender-skp-importer` | 🗄️ 已归档（只读） | `addons/sketchup_importer.zip`；其内含的 **Import MAX（io_scene_max）** 也已并入 `addons/io_scene_max/` |
-| `blender-car-mesh-optimizer` | 🗄️ 已删除 | 内容已并入 `addons/blender_car_mesh_optimizer.py` |
-| `blender-intersect-quads-builder` | 🗄️ 已删除 | 内容已并入 `addons/intersect_quads_builder.py` |
+| `blender-empty-align-center` | 🔓 已解冻 · 历史留档（不再维护） | `addons/empty_align_center.py` |
+| `blender-mesh-face-sorter` | 🔓 已解冻 · 历史留档（不再维护） | `addons/mesh_face_sorter.py` |
+| `blender-skp-importer` | 🔓 已解冻 · 历史留档（不再维护） | `addons/sketchup_importer.zip`；其内含的 **Import MAX（io_scene_max）** 也已并入 `addons/io_scene_max/` |
+| `blender-car-mesh-optimizer` | 🗑️ 已删除 | 内容已并入 `addons/blender_car_mesh_optimizer.py` |
+| `blender-intersect-quads-builder` | 🗑️ 已删除 | 内容已并入 `addons/intersect_quads_builder.py` |
+
+## 不在本仓库范围
+
+本仓库**只收 Blender 插件（addon）**。下面两个仓库名字里带 `blender-`，但**都不是插件** ——
+它们**不并入、不归档**，各自独立维护：
+
+| 仓库 | 是什么 | 说明 |
+|---|---|---|
+| [`blender-tips`](https://github.com/Simiely/blender-tips) | Blender **技能 / 技巧速查库** | 文档库（不是插件），随 Blender 版本长期生长 |
+| [`blender-render-console`](https://github.com/Simiely/blender-render-console) | **PC 软件** | Windows 桌面程序（无头调 Blender 渲染、进度与断点续跑），属 PC 工具，不走插件集 |
+
+> 判断标准：**能不能以 addon 形式装进 Blender**。装不进去的，就不属于本仓库。

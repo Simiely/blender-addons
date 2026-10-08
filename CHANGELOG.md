@@ -4,6 +4,19 @@
 
 ---
 
+## 仓库 · 2026-10-08 · **解除归档：3 个原独立仓库改为「历史留档」**
+
+- **解冻 3 个原独立仓库**：`blender-empty-align-center`、`blender-mesh-face-sorter`、`blender-skp-importer`。
+  归档会让仓库**完全只读**（issue / PR / Releases 全部冻结），改为**保留、公开、不再维护**
+- 3 个仓库 README 顶部横幅由「📦 本仓库已归档」改为「📦 本仓库为历史留档」
+- 清理归档期间留下的**测试残留**：`blender-skp-importer` 的 `_sizetest_2mb.bin`（2 MB）、
+  `blender-mesh-face-sorter` 的 `20260704Final` / `20260710Final`（两个 1 字节空文件）
+- 清空 `blender-mesh-face-sorter` 的 **homepage 死链**（指向的 GitHub Pages 从未启用，`GET /pages` 返回 404）
+- README「相关仓库」表更新为「🔓 已解冻 · 历史留档」，并新增**「不在本仓库范围」**小节，
+  明确 `blender-tips`（技能库）与 `blender-render-console`（PC 软件）**不属于本仓库**
+
+---
+
 ## 仓库 · 2026-10-08
 
 **仓库整理与上游收敛**：

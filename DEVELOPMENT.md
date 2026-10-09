@@ -42,6 +42,12 @@
 | 依赖 | 纯 `bpy` / `mathutils` | SketchUpAPI.dll（随包分发） | 无额外依赖 |
 | 归属 | 本仓库自研 | **第三方 5.x 兼容修改版**，非自研 | **第三方插件（nrgsille io_scene_max v1.9.2）**，非自研 |
 
+> **SketchUp Importer 的准确来源**：本仓 `addons/sketchup_importer.zip` 取自
+> [`Simiely/Sketchup_Importer`](https://github.com/Simiely/Sketchup_Importer)（**fork**，
+> 上游 [`RedHaloStudio/Sketchup_Importer`](https://github.com/RedHaloStudio/Sketchup_Importer) ←
+> 原始 `martijnberger/sketchup_importer`）。该 fork 仓**不是本仓库的一部分**：
+> 它作为**上游依赖**独立存在、不并入、不归档。
+
 **为什么 zip 要放行 `.gitignore`**：原 `.gitignore` 有 `*.zip`，本意是排除 Blender 打包产物
 （`build/` 下的东西）。但 SketchUp 插件必须以 zip 进仓，故加否定规则
 `!addons/sketchup_importer.zip` 并注明理由。**新增 zip 类交付物时要留意这条。**

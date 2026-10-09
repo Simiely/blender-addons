@@ -13,7 +13,7 @@
 | 1 | **工作台快渲**<br>Workbench Quick Look | 设好相机后直接出工作台（Workbench）风格的预览图 / 动画。**全程不切换渲染引擎**，Cycles 的设置原封不动 | v1.6.0 | 4.0+ | [`workbench_quick_render.py`](./addons/workbench_quick_render.py) |
 | 2 | **对象轴与居中工具**<br>Empty Align Center | 居中（自身+子集）/ 轴居中贴底 / 轴居中贴底并落地。均含子集、不限类型，**物体网格不动只改原点** | v1.5.4 | 2.93+ | [`empty_align_center.py`](./addons/empty_align_center.py) |
 | 3 | **网格排序器**<br>Mesh Face Sorter | 按**面数从高到低**排列场景中所有网格体，便于逐个检查与处理 | v1.7.0 | 3.0+ | [`mesh_face_sorter.py`](./addons/mesh_face_sorter.py) |
-| 4 | **SketchUp Importer** | 导入 `.skp` 模型到 Blender（官方插件的 5.x 兼容修改版，含 cp37~cp314 多版二进制） | v0.27.0 | 2.80+ | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) ⚠️ **需解压** |
+| 4 | **SketchUp Importer** | 导入 `.skp` 模型到 Blender。**第三方插件的 5.x 兼容修改版**（上游 fork：[`Simiely/Sketchup_Importer`](https://github.com/Simiely/Sketchup_Importer) ← [`RedHaloStudio/Sketchup_Importer`](https://github.com/RedHaloStudio/Sketchup_Importer)），含 cp37~cp314 多版二进制 | v0.27.0 | 2.80+ | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) ⚠️ **需解压** |
 | 5 | **交点四边面生成器**<br>Intersect Quads Builder | 用选面作切割面，生成交点处的四边面（修补建模用） | v0.2.0 | 2.80+ | [`intersect_quads_builder.py`](./addons/intersect_quads_builder.py) ⚠️ **WIP** |
 | 6 | **车模网格减面**<br>Car Mesh Optimizer | 车模高精度网格减面：分离松散块 → 逐个减面 → 合并焊接 | v3.4.0 | 3.6+ | [`blender_car_mesh_optimizer.py`](./addons/blender_car_mesh_optimizer.py) ⚠️ **WIP** |
 | 7 | **Import MAX**<br>Import Autodesk MAX | 导入 `.max`（Autodesk 3ds Max）场景：网格 + 材质，第三方插件的 Blender 4.2+ 兼容版 | v1.9.2 | 4.2+ | [`io_scene_max/`](./addons/io_scene_max) ⚠️ **包目录·第三方** |
@@ -178,6 +178,17 @@ blender-addons/
 | `blender-skp-importer` | 📦 已归档（只读） | `addons/sketchup_importer.zip`；其内含的 **Import MAX（io_scene_max）** 也已并入 `addons/io_scene_max/` |
 | `blender-car-mesh-optimizer` | 🗑️ 已删除 | 内容已并入 `addons/blender_car_mesh_optimizer.py` |
 | `blender-intersect-quads-builder` | 🗑️ 已删除 | 内容已并入 `addons/intersect_quads_builder.py` |
+
+### 第三方插件的上游来源（非本仓库原创）
+
+`addons/` 里有两个**第三方插件**（不是自研），来源必须标明，避免与自研插件混淆：
+
+| 本仓文件 | 上游仓库 | 说明 |
+|---|---|---|
+| `addons/sketchup_importer.zip` | [`Simiely/Sketchup_Importer`](https://github.com/Simiely/Sketchup_Importer)（**fork**） | 该 fork 的上游为 [`RedHaloStudio/Sketchup_Importer`](https://github.com/RedHaloStudio/Sketchup_Importer)，原始上游 `martijnberger/sketchup_importer`。**非本仓库原创**，本仓库只做 5.x 兼容修复并打包为 zip |
+| `addons/io_scene_max/` | `nrgsille/io_scene_max`（v1.9.2） | 第三方 Import MAX 插件，含官方扩展 manifest，**非本仓库原创** |
+
+> `Simiely/Sketchup_Importer` **不并入本仓库、也不归档** —— 它只是**上游依赖**，保持独立、按需同步。
 
 > **为什么改成归档**：插件代码已全部在本仓库，原仓库只是历史快照、不再发版 —— 归档封存它，避免「哪边是新版」的困惑。
 > 归档**不会删除已发布的 Release**（下载链接仍可用），只是不能再发新版。

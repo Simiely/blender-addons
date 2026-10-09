@@ -168,17 +168,19 @@ blender-addons/
 
 ## 相关仓库
 
-本仓库为插件的**唯一维护处**。原独立仓库**不做归档**（仓库一旦归档就**完全只读**，issue / PR / Releases 全冻结），
-改为**解冻保留**、标注「历史留档」、**不再维护**；其插件文件与本仓库对应文件**逐字节一致**，
-历史代码与文档留作参考：
+本仓库为插件的**唯一维护处**。原独立仓库已**归档只读**，作为**历史快照**保留；
+其插件文件与本仓库对应文件**逐字节一致**，历史代码与文档留作参考：
 
 | 原仓库 | 处理结果 | 对应内容 |
 |---|---|---|
-| `blender-empty-align-center` | 🔓 已解冻 · 历史留档（不再维护） | `addons/empty_align_center.py` |
-| `blender-mesh-face-sorter` | 🔓 已解冻 · 历史留档（不再维护） | `addons/mesh_face_sorter.py` |
-| `blender-skp-importer` | 🔓 已解冻 · 历史留档（不再维护） | `addons/sketchup_importer.zip`；其内含的 **Import MAX（io_scene_max）** 也已并入 `addons/io_scene_max/` |
+| `blender-empty-align-center` | 📦 已归档（只读） | `addons/empty_align_center.py` |
+| `blender-mesh-face-sorter` | 📦 已归档（只读） | `addons/mesh_face_sorter.py` |
+| `blender-skp-importer` | 📦 已归档（只读） | `addons/sketchup_importer.zip`；其内含的 **Import MAX（io_scene_max）** 也已并入 `addons/io_scene_max/` |
 | `blender-car-mesh-optimizer` | 🗑️ 已删除 | 内容已并入 `addons/blender_car_mesh_optimizer.py` |
 | `blender-intersect-quads-builder` | 🗑️ 已删除 | 内容已并入 `addons/intersect_quads_builder.py` |
+
+> **为什么改成归档**：插件代码已全部在本仓库，原仓库只是历史快照、不再发版 —— 归档封存它，避免「哪边是新版」的困惑。
+> 归档**不会删除已发布的 Release**（下载链接仍可用），只是不能再发新版。
 
 ## 不在本仓库范围
 

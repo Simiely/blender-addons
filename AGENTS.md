@@ -1,6 +1,6 @@
 # AGENTS.md · 项目规则
 
-> 📌 **文档基线**：2026-10-09 标明第三方插件的上游来源（SketchUp Importer / Import MAX）
+> 📌 **文档基线**：2026-10-13 移除交点四边面 / 车模减面两个 WIP 插件（commit `c6923c4`）
 > **更新文档/代码后，请更新此行**（日期 + 新 commit hash），并在 CHANGELOG 追加版本
 
 ## 技术栈

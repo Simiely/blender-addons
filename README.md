@@ -14,14 +14,10 @@
 | 2 | **对象轴与居中工具**<br>Empty Align Center | 居中（自身+子集）/ 轴居中贴底 / 轴居中贴底并落地。均含子集、不限类型，**物体网格不动只改原点** | v1.5.4 | 2.93+ | [`empty_align_center.py`](./addons/empty_align_center.py) |
 | 3 | **网格排序器**<br>Mesh Face Sorter | 按**面数从高到低**排列场景中所有网格体，便于逐个检查与处理 | v1.7.0 | 3.0+ | [`mesh_face_sorter.py`](./addons/mesh_face_sorter.py) |
 | 4 | **SketchUp Importer** | 导入 `.skp` 模型到 Blender。**第三方插件的 5.x 兼容修改版**（上游 fork：[`Simiely/Sketchup_Importer`](https://github.com/Simiely/Sketchup_Importer) ← [`RedHaloStudio/Sketchup_Importer`](https://github.com/RedHaloStudio/Sketchup_Importer)），含 cp37~cp314 多版二进制 | v0.27.0 | 2.80+ | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) ⚠️ **需解压** |
-| 5 | **交点四边面生成器**<br>Intersect Quads Builder | 用选面作切割面，生成交点处的四边面（修补建模用） | v0.2.0 | 2.80+ | [`intersect_quads_builder.py`](./addons/intersect_quads_builder.py) ⚠️ **WIP** |
-| 6 | **车模网格减面**<br>Car Mesh Optimizer | 车模高精度网格减面：分离松散块 → 逐个减面 → 合并焊接 | v3.4.0 | 3.6+ | [`blender_car_mesh_optimizer.py`](./addons/blender_car_mesh_optimizer.py) ⚠️ **WIP** |
-| 7 | **Import MAX**<br>Import Autodesk MAX | 导入 `.max`（Autodesk 3ds Max）场景：网格 + 材质，第三方插件的 Blender 4.2+ 兼容版 | v1.9.2 | 4.2+ | [`io_scene_max/`](./addons/io_scene_max) ⚠️ **包目录·第三方** |
+| 5 | **Import MAX**<br>Import Autodesk MAX | 导入 `.max`（Autodesk 3ds Max）场景：网格 + 材质，第三方插件的 Blender 4.2+ 兼容版 | v1.9.2 | 4.2+ | [`io_scene_max/`](./addons/io_scene_max) ⚠️ **包目录·第三方** |
 
-> **状态说明**：✅ 稳定可用　⚠️ **WIP 开发中，可能不稳定或数据损坏，请勿用于正式项目**
->
-> 5、6 号仍在开发（原独立仓库 README 标注「请勿安装」）。迁入本仓库是为了**统一管理**，
-> 不代表它们已可交付 —— 用之前请自行在测试文件上验证。
+> **状态说明**：✅ 稳定可用　⚠️ **包目录形态**（SketchUp Importer 需解压；Import MAX 是扩展包目录，
+> 安装方式与单文件插件不同，见下文）
 
 ## 安装
 
@@ -32,7 +28,7 @@
 3. 右上角下拉 → **从磁盘安装** → **安装旧式插件（Install Legacy Add-on）**
 4. 选中那个 `.py` → 勾选启用
 
-> 方式一适用于 **1、2、3、5、6 号**（都是单文件 legacy addon）。
+> 方式一适用于 **1、2、3 号**（都是单文件 legacy addon）。
 
 ### 方式二：放进脚本目录（通用于全部插件）
 
@@ -54,7 +50,7 @@ C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号
 
 > 也可以直接在偏好设置里用「从磁盘安装」直接选那个 `.zip`，Blender 会自动完成解压。
 
-### ⚠️ Import MAX（7 号）是包目录插件
+### ⚠️ Import MAX（5 号）是包目录插件
 
 它和 SketchUp Importer 一样是**包目录形态**（含 `blender_manifest.toml` + `import_max.py`），不是单文件：
 
@@ -75,8 +71,6 @@ C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号
 | 对象轴与居中工具 | `Tool` |
 | 网格排序器 | `网格排序器` |
 | SketchUp Importer | 无面板，走 文件 → 导入 菜单 |
-| 交点四边面生成器 | `交点四边面` |
-| 车模网格减面 | `车模减面` |
 | Import MAX | 无面板，走 文件 → 导入 → Autodesk MAX (.max) |
 
 ## 快速开始
@@ -114,26 +108,13 @@ C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号
 **它解决的问题**：场景里几十个网格体，想找出「哪个面数最高、最该先减」时只能一个个数。
 
 一键把场景中所有网格体**按面数从高到低重排**，从上往下数就是优先级。
-适合配合减面类插件（仓库里的 6 号车模减面）分批处理。
+适合配合减面类插件分批处理。
 
 ### 4. SketchUp Importer
 
 导入 `.skp` 文件。官方插件在 Blender 5.x 上的兼容问题已在此版修复（含 cp313/cp314 二进制）。
 
 若导入报错，注意菜单路径是 **文件 → 导入 → SketchUp Importer**，不是 Blender 原生的 `.fbx` 导入器。
-
-### 5. 交点四边面生成器（WIP）
-
-选中若干面作为**切割面** → 生成在这些面交点处的四边面，用于修补不干净的布尔/相交拓扑。
-
-流程：**添加选中为切割面** → **生成四边面** →（可选）**移除切割面** / **清空切割面**。
-
-### 6. 车模网格减面（WIP）
-
-针对高精度车模的减面流程：**选取特征点** → **按密度选点** → **确认选取** → **生成优化网格**。
-另提供**快速预设**一键跑通流程。
-
-> ⚠️ 这两个 WIP 插件会**直接改动网格数据**。请务必先在新文件里测试，确认无误再用于正式项目。
 
 ## 目录结构
 
@@ -148,8 +129,6 @@ blender-addons/
 │   ├── workbench_quick_render.py        # 单文件
 │   ├── empty_align_center.py            # 单文件
 │   ├── mesh_face_sorter.py              # 单文件
-│   ├── intersect_quads_builder.py       # 单文件（WIP）
-│   ├── blender_car_mesh_optimizer.py    # 单文件（WIP）
 │   ├── sketchup_importer.zip            # 包目录，需解压（第三方修改版）
 │   └── io_scene_max/                   # 包目录（第三方 Import MAX，含 blender_manifest.toml）
 └── docs/              # 生长出来的详细文档（超过阈值才拆，不提前设计）
@@ -176,8 +155,6 @@ blender-addons/
 | `blender-empty-align-center` | 📦 已归档（只读） | `addons/empty_align_center.py` |
 | `blender-mesh-face-sorter` | 📦 已归档（只读） | `addons/mesh_face_sorter.py` |
 | `blender-skp-importer` | 📦 已归档（只读） | `addons/sketchup_importer.zip`；其内含的 **Import MAX（io_scene_max）** 也已并入 `addons/io_scene_max/` |
-| `blender-car-mesh-optimizer` | 🗑️ 已删除 | 内容已并入 `addons/blender_car_mesh_optimizer.py` |
-| `blender-intersect-quads-builder` | 🗑️ 已删除 | 内容已并入 `addons/intersect_quads_builder.py` |
 
 ### 第三方插件的上游来源（非本仓库原创）
 

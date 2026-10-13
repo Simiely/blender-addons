@@ -6,8 +6,7 @@
 ## 技术栈
 
 - Blender **2.80 ~ 5.x**（验证环境：Blender 5.2.2 LTS，内置 Python 3.13）
-  - 各插件的**最低版本看自己的 `bl_info["blender"]`**：快渲 4.0+、居中 2.93+、
-    排序器 3.0+、交点四边面 2.80+、车模减面 3.6+
+  - 各插件的**最低版本看自己的 `bl_info["blender"]`**：快渲 4.0+、居中 2.93+、排序器 3.0+
 - 自研插件：纯 Python + Blender 内置 `bpy` / `mathutils`；**无任何第三方依赖**
 - **单文件 legacy addon**（完整 `bl_info`，不用 `blender_manifest.toml`）
 - 交付路径：`addons/<插件名>.py`，**文件名 = 模块名**（`workbench_quick_render.py` → `workbench_quick_render`）

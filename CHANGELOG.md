@@ -4,6 +4,21 @@
 
 ---
 
+## 仓库 · 2026-10-13 · **移除 2 个 WIP 插件**
+
+- **删除两个 WIP 插件**：`addons/intersect_quads_builder.py`（交点四边面生成器 v0.2.0）与
+  `addons/blender_car_mesh_optimizer.py`（车模网格减面 v3.4.0）。两者自 2026-10-02 迁入起一直是
+  WIP、会直接改动网格数据，用户决定不再保留
+- **同步清理引用**：
+  - README：「插件一览」7 行 → 5 行（Import MAX 由 7 号改 5 号）、插件位置速查、
+    快速开始第 5/6 节整节删除、目录结构、「相关仓库」表
+  - DEVELOPMENT：「两类插件形态」自研 5 个 → 3 个、仓库结构、插件清单、各插件一句话
+  - AGENTS：兼容版本行
+- **本机同步卸载**：删除 `scripts/addons/` 下两个 `.py` 及对应 `__pycache__`，并取消偏好设置里的启用
+- 本条之前的记录**原样保留**，不改写已发布的变更历史
+
+---
+
 ## 仓库 · 2026-10-08 · **解除归档：3 个原独立仓库改为「历史留档」**
 
 - **解冻 3 个原独立仓库**：`blender-empty-align-center`、`blender-mesh-face-sorter`、`blender-skp-importer`。

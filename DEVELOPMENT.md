@@ -34,7 +34,7 @@
 
 仓库里现在有两种形态，**安装方式不同**，写文档 / 回答用户时不能混为一谈：
 
-| | 自研插件（3 个） | SketchUp Importer | Import MAX |
+| | 自研插件（4 个） | SketchUp Importer | Import MAX |
 |---|---|---|---|
 | 形态 | 单文件 `.py` | 包目录，多版本 `.pyd` + `.dll` | 包目录：`blender_manifest.toml` + `import_max.py` |
 | 交付 | 直接下载 `.py` | `sketchup_importer.zip`，**需解压** | `io_scene_max/`（文件夹，可打包 zip） |
@@ -65,6 +65,7 @@ blender-addons/
 │   ├── workbench_quick_render.py        # 单文件 · 稳定
 │   ├── empty_align_center.py            # 单文件 · 稳定
 │   ├── mesh_face_sorter.py              # 单文件 · 稳定
+│   ├── blender_ai_bridge.py             # 单文件 · AI 联调桥（socket 服务，随 Blender 自启）
 │   ├── sketchup_importer.zip            # 包目录 · 需解压 · 第三方修改版
 │   └── io_scene_max/                   # 包目录 · 第三方（Import MAX，含 blender_manifest.toml）
 └── docs/
@@ -91,6 +92,7 @@ blender-addons/
 | **工作台快渲**<br>Workbench Quick Look | [`workbench_quick_render.py`](./addons/workbench_quick_render.py) | v1.6.0 | 单文件 | ✅ | [`docs/架构.md`](./docs/架构.md) |
 | **对象轴与居中工具**<br>Empty Align Center | [`empty_align_center.py`](./addons/empty_align_center.py) | v1.5.4 | 单文件 | ✅ | 见下 |
 | **网格排序器**<br>Mesh Face Sorter | [`mesh_face_sorter.py`](./addons/mesh_face_sorter.py) | v1.7.0 | 单文件 | ✅ | 见下 |
+| **AI 联调桥**<br>AI Bridge | [`blender_ai_bridge.py`](./addons/blender_ai_bridge.py) | v1.1.0 | 单文件 | ✅ | 见下 |
 | **SketchUp Importer** | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) | v0.27.0 | 包目录 | ✅ | 第三方修改版 |
 | **Import MAX**<br>Import Autodesk MAX | [`io_scene_max/`](./addons/io_scene_max) | v1.9.2 | 包目录 | ✅ | 第三方修改版（见下） |
 
@@ -110,6 +112,13 @@ blender-addons/
 
 - **网格排序器**：按面数从高到低重排场景中所有网格体，让「先减哪个」一目了然。
   适合配合减面类插件分批处理。
+
+- **AI 联调桥**：把原来的「文本块 + 手动 Run Script」socket 桥做成**常驻插件**。
+  启用后随 Blender 自启监听 `127.0.0.1:9877`（可改端口），把收到的 Python 源码经
+  `bpy.app.timers` 调度到主线程执行，结果回传 `OK/ERR + <END>`。面板显示
+  连接 / 执行 / 排队状态，可一键复制「AI 连接提示词」；每次请求写入文本块
+  `AI_BRIDGE_LOG.md`（随 `.blend` 保存）。**关键约束：执行期间主线程被占、界面冻结**，
+  因此长任务（>60s）应改走 `blender -b`，而不是这个桥。
 
 - **SketchUp Importer**：导入 `.skp`。官方插件在 Blender 5.x 上的兼容问题已修复，
   包内含 cp37~cp314 多版 `.pyd`。**非自研**，是第三方插件的兼容修改版。

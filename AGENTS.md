@@ -6,7 +6,7 @@
 ## 技术栈
 
 - Blender **2.80 ~ 5.x**（验证环境：Blender 5.2.2 LTS，内置 Python 3.13）
-  - 各插件的**最低版本看自己的 `bl_info["blender"]`**：快渲 4.0+、居中 2.93+、排序器 3.0+
+  - 各插件的**最低版本看自己的 `bl_info["blender"]`**：快渲 4.0+、居中 2.93+、排序器 3.0+、联调桥 4.2+
 - 自研插件：纯 Python + Blender 内置 `bpy` / `mathutils`；**无任何第三方依赖**
 - **单文件 legacy addon**（完整 `bl_info`，不用 `blender_manifest.toml`）
 - 交付路径：`addons/<插件名>.py`，**文件名 = 模块名**（`workbench_quick_render.py` → `workbench_quick_render`）
@@ -40,6 +40,22 @@
 - ★ **改代码前先量**：判断「要不要重构」不要凭感觉，跑 `analyze_arch.py`（AST 调用图）+ `radon cc/mi`
   + 重复度，并按三条判据决策（触发条件是否出现 / 改完能否被自动化接住 / 收益是「防未来」还是「解当下痛点」）。
   完整方法见技能 `python-arch-audit`，本仓库的例子见 [`docs/技术债与重构计划.md`](./docs/技术债与重构计划.md)。
+
+### AI 联调桥（`blender_ai_bridge.py`）专属坑
+
+- ★ **执行期间主线程被占，界面必然冻结**：这是 `bpy` 单线程限制，不是 bug。
+  「执行中」状态必须在**真正执行前**刷出（先置 `busy` + `tag_redraw`，下一拍再执行），
+  面板**无法**显示实时跳秒。超过 60 秒的任务改走 `blender -b`。
+- ★ **执行脚本必须用 `except BaseException` 兜底**：脚本里 `sys.exit()` 抛的是 `SystemExit`，
+  `except Exception` 接不住，会让**整个 Blender 退出**（已实测）。改执行逻辑时别退回 `except Exception`。
+- ★ **Windows 监听必须用 `SO_EXCLUSIVEADDRUSE`**：`SO_REUSEADDR` 允许两个进程绑同一端口并静默抢监听，
+  多开 Blender 时「端口被占用」不会报错。非 Windows 才退回 `SO_REUSEADDR`。
+- **停桥必须同时放行队列**：只取消「正在执行」的那条，排队客户端会一直卡到 120 秒超时。
+- **日志文本块会让 `.blend` 变 dirty**：这是「日志随工程保存」的预期代价；
+  日志块名 `AI_BRIDGE_LOG.md`，上限 3000 行，超出截断。
+- **`_CLASSES` 是唯一注册清单**：新增 Operator / Panel 必须同步加进去，否则面板直接报错。
+- **面板重绘只在状态变化时触发**：不要把「空闲秒数」放进 `_ui_tick` 的快照，
+  否则闲置时也 1Hz 重绘所有区域（大工程纯浪费）。
 
 ## 约定
 

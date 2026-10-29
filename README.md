@@ -15,6 +15,7 @@
 | 3 | **网格排序器**<br>Mesh Face Sorter | 按**面数从高到低**排列场景中所有网格体，便于逐个检查与处理 | v1.7.0 | 3.0+ | [`mesh_face_sorter.py`](./addons/mesh_face_sorter.py) |
 | 4 | **SketchUp Importer** | 导入 `.skp` 模型到 Blender。**第三方插件的 5.x 兼容修改版**（上游 fork：[`Simiely/Sketchup_Importer`](https://github.com/Simiely/Sketchup_Importer) ← [`RedHaloStudio/Sketchup_Importer`](https://github.com/RedHaloStudio/Sketchup_Importer)），含 cp37~cp314 多版二进制 | v0.27.0 | 2.80+ | [`sketchup_importer.zip`](./addons/sketchup_importer.zip) ⚠️ **需解压** |
 | 5 | **Import MAX**<br>Import Autodesk MAX | 导入 `.max`（Autodesk 3ds Max）场景：网格 + 材质，第三方插件的 Blender 4.2+ 兼容版 | v1.9.2 | 4.2+ | [`io_scene_max/`](./addons/io_scene_max) ⚠️ **包目录·第三方** |
+| 6 | **AI 联调桥**<br>AI Bridge | 常驻 socket 桥：AI agent（WorkBuddy / 脚本）直连 Blender 执行 Python。**随 Blender 自启、端口可切换、侧栏显示连接/执行状态、操作日志写入文本块**；协议兼容 `blender-tips` 的 `send.py` | v1.1.0 | 4.2+ | [`blender_ai_bridge.py`](./addons/blender_ai_bridge.py) |
 
 > **状态说明**：✅ 稳定可用　⚠️ **包目录形态**（SketchUp Importer 需解压；Import MAX 是扩展包目录，
 > 安装方式与单文件插件不同，见下文）
@@ -28,7 +29,7 @@
 3. 右上角下拉 → **从磁盘安装** → **安装旧式插件（Install Legacy Add-on）**
 4. 选中那个 `.py` → 勾选启用
 
-> 方式一适用于 **1、2、3 号**（都是单文件 legacy addon）。
+> 方式一适用于 **1、2、3、6 号**（都是单文件 legacy addon）。
 
 ### 方式二：放进脚本目录（通用于全部插件）
 
@@ -38,6 +39,10 @@ Windows 用户路径通常是：
 ```
 C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号>\scripts\addons\
 ```
+
+> ⚠️ **不要凭记忆填路径**：设置了 `BLENDER_USER_SCRIPTS` 环境变量、或用便携版时，用户目录会被重定向。
+> 以 Blender 自己解析的结果为准：`bpy.utils.user_resource('SCRIPTS', path='addons')`。
+> 最稳的做法仍是「方式一：从磁盘安装」——它会装到当前会话实际使用的目录。
 
 ### ⚠️ SketchUp Importer（4 号）必须单独处理
 
@@ -72,6 +77,7 @@ C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号
 | 网格排序器 | `网格排序器` |
 | SketchUp Importer | 无面板，走 文件 → 导入 菜单 |
 | Import MAX | 无面板，走 文件 → 导入 → Autodesk MAX (.max) |
+| AI 联调桥 | `AI 联调` |
 
 ## 快速开始
 
@@ -116,6 +122,22 @@ C:\Users\<你的用户名>\AppData\Roaming\Blender Foundation\Blender\<版本号
 
 若导入报错，注意菜单路径是 **文件 → 导入 → SketchUp Importer**，不是 Blender 原生的 `.fbx` 导入器。
 
+### 5. AI 联调桥（AI Bridge）
+
+**它解决的问题**：AI 想直接改当前打开的工程时，原来每次都要「Scripting 工作区打开桥脚本 → Run Script」。
+装成插件后**随 Blender 自启**，不用再手动加载。
+
+1. 启用插件 → 3D 视口按 `N` → 侧栏 **「AI 联调」**
+2. 默认监听 `127.0.0.1:9877`；面板可改端口 → **应用端口并重启**（多开 Blender 时各用各的端口）
+3. 状态区显示：**等待连接 / 已连接 / 执行中**、排队数、最近活动时间
+4. **复制 AI 连接提示词**：把当前端口的协议、客户端代码、硬约束复制到剪贴板，直接发给 AI
+5. **操作日志**：每次请求写入文本块 `AI_BRIDGE_LOG.md`（随 `.blend` 保存），
+   含时间 / 耗时 / 摘要 / 场景增减 / stdout 尾部；面板可「打开日志 / 复制 / 清空」
+
+> 协议：请求 = UTF-8 Python 源码 + `<END>`；响应 = `OK\n<stdout>` 或 `ERR\n<traceback>` + `<END>`。
+> 单条硬超时 120 秒。执行发生在 Blender 主线程，**执行期间界面会冻结**（长任务请改走 `blender -b`）。
+> 脚本里写 `# @summary: ...` 可作为日志标题，`# @name: ...` 标记来源（配套 `send.py` 会自动附加文件名）。
+
 ## 目录结构
 
 ```
@@ -129,6 +151,7 @@ blender-addons/
 │   ├── workbench_quick_render.py        # 单文件
 │   ├── empty_align_center.py            # 单文件
 │   ├── mesh_face_sorter.py              # 单文件
+│   ├── blender_ai_bridge.py             # 单文件 · AI 联调桥
 │   ├── sketchup_importer.zip            # 包目录，需解压（第三方修改版）
 │   └── io_scene_max/                   # 包目录（第三方 Import MAX，含 blender_manifest.toml）
 └── docs/              # 生长出来的详细文档（超过阈值才拆，不提前设计）

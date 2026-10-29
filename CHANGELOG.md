@@ -4,6 +4,41 @@
 
 ---
 
+## blender_ai_bridge v1.1.0（2026-10-29）
+
+**新增插件：AI 联调桥** —— 把 `blender-tips` 里的 9877 文本块桥做成常驻插件。
+
+### 功能
+
+- **随 Blender 自启**：启用后由 `bpy.app.timers` 延迟 1 秒起监听，默认 `127.0.0.1:9877`；
+  `bpy.app.background`（无头渲染）下跳过，不占端口
+- **端口可切换**：面板改端口 →「应用端口并重启」；Windows 使用 `SO_EXCLUSIVEADDRUSE`，
+  端口占用会明确报错（`WinError 10048`），不会静默抢监听
+- **状态显示**：等待连接 / 已连接 / 执行中 + 排队数 + 最近活动时间；
+  执行前先刷状态再执行（主线程执行期间界面冻结，无法实时跳秒）
+- **复制 AI 连接提示词**：按当前端口生成协议、客户端代码与硬约束，一键进剪贴板
+- **持久化日志**：每次请求写入文本块 `AI_BRIDGE_LOG.md`（随 `.blend` 保存），
+  含时间 / 耗时 / `@summary` 摘要 / 脚本名 / objects·materials·collections 增减 / stdout 尾部 20 行；
+  上限 3000 行；面板可打开 / 复制 / 清空
+- 协议与 `blender-tips` 的 `scripts/blender-remote-control/send.py` 兼容
+  （请求 `code + <END>`，响应 `OK|ERR + <END>`）
+
+### 稳定性（审核中修复）
+
+- **`sys.exit()` 不再能退出 Blender**：执行改用 `except BaseException` 兜底，返回 ERR + traceback
+- **停桥会放行队列**：排队任务立刻收到 `ERR bridge stopped before execution`，不再卡到 120 秒超时
+- **定时器注册失败会复位状态**：`busy / pending` 不再永久卡死队列
+- **空闲不再 1Hz 重绘**：`_ui_tick` 快照不含空闲秒数，只在状态变化时重绘
+
+### 验证
+
+- 无头冷启动：隔离用户目录 → `save_userpref` → 新进程复查 `addon_utils.check() = (True, True)`
+- 边界：空脚本 / 中文+emoji / 5000 行输出 / `sys.exit()` / 执行中停桥 / 删除日志块后自动重建
+- 并发：5 客户端 × 3 批全部 OK，clients / 队列归零，线程数无增长
+- 端口：占用时明确报错；快速启停 5 次端口复用正常
+
+---
+
 ## 仓库 · 2026-10-13 · **移除 2 个 WIP 插件**
 
 - **删除两个 WIP 插件**：`addons/intersect_quads_builder.py`（交点四边面生成器 v0.2.0）与

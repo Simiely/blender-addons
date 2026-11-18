@@ -1,3 +1,18 @@
+---
+id: "docs.issues.bl-info-blank-line"
+title: "插件装好了，偏好设置里却找不到"
+summary: "bl_info 后紧跟多行 docstring，快速扫描器截出未闭合三引号，addon_utils 不收录该插件。"
+type: "explanation"
+kind: "note"
+status: "active"
+owner: "@simiely"
+topics: ["development"]
+source_type: "code"
+source: "addons/workbench_quick_render.py"
+last_reviewed: "2026-10-29"
+related: []
+---
+
 # 问题：插件装好了，偏好设置里却找不到
 
 **TL;DR**：`bl_info` 后面紧跟了多行 docstring，快速扫描器把代码截成三引号未闭合，`ast.parse` 失败，

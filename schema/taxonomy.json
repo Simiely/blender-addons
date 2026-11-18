@@ -1,0 +1,103 @@
+{
+  "version": "2.7.4",
+  "name": "blender-addons",
+  "include": [
+    "README.md",
+    "AGENTS.md",
+    "DEVELOPMENT.md",
+    "CHANGELOG.md",
+    "docs/**"
+  ],
+  "frontmatter_exempt": {
+    "names": [
+      "AGENTS.md",
+      "CHANGELOG.md",
+      "DEVELOPMENT.md",
+      "README.md"
+    ],
+    "paths": []
+  },
+  "types": [
+    "tutorial",
+    "how-to",
+    "reference",
+    "explanation"
+  ],
+  "kinds": [
+    "standard",
+    "decision",
+    "index",
+    "note",
+    "glossary",
+    "report",
+    "pitfall"
+  ],
+  "statuses": [
+    "draft",
+    "active",
+    "resolved",
+    "superseded",
+    "archived"
+  ],
+  "tiers": [
+    "normal",
+    "critical"
+  ],
+  "confidences": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "topics": [
+    "governance",
+    "development"
+  ],
+  "relations": {
+    "depends-on": {
+      "direction": "directed",
+      "inverse": "depended-on-by",
+      "transitive": false
+    },
+    "extends": {
+      "direction": "directed",
+      "inverse": "extended-by",
+      "transitive": true
+    },
+    "spawned-from": {
+      "direction": "directed",
+      "inverse": "spawned",
+      "transitive": false
+    },
+    "supersedes": {
+      "direction": "directed",
+      "inverse": "superseded-by",
+      "transitive": false
+    },
+    "contradicts": {
+      "direction": "symmetric",
+      "inverse": null,
+      "transitive": false
+    },
+    "see-also": {
+      "direction": "symmetric",
+      "inverse": null,
+      "transitive": false
+    }
+  },
+  "review_days": {
+    "normal": 365,
+    "critical": 90
+  },
+  "generated_files": [
+    "llms.txt",
+    "docs/_generated/index.md",
+    "docs/_generated/backlinks.md",
+    "docs/_generated/pitfalls.md"
+  ],
+  "ignore": [
+    ".github/**",
+    "tools/**",
+    "**/node_modules/**",
+    "**/__pycache__/**"
+  ]
+}

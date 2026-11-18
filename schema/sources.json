@@ -1,0 +1,30 @@
+{
+  "_comment": "真源映射：workbench_quick_render.py 的私有函数/类名，被下列文档引用时必须存在。技术债计划（kind=report）是历史文档，代码示例保留当时的规划命名，故不参与漂移检查。",
+  "code": [
+    {
+      "truth": "addons/workbench_quick_render.py",
+      "patterns": [
+        "^\\s*def\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(",
+        "^\\s*class\\s+([A-Za-z_][A-Za-z0-9_]*)"
+      ],
+      "docs": [
+        "docs/架构.md",
+        "docs/问题记录/外观参数-分散在两个Struct上.md",
+        "docs/问题记录/插件扫描不到-bl_info空行.md",
+        "docs/问题记录/无头-视口可测性.md",
+        "docs/问题记录/无头测试-浮点断言.md",
+        "docs/问题记录/腔体-两组系数预设.md",
+        "docs/问题记录/预览记忆-保存顺序与优先级.md",
+        "docs/问题记录/预览还原-枚举属性丢失.md",
+        "docs/问题记录/预览预设-快照顺序.md"
+      ],
+      "token_pattern": "^(?:_[a-z][a-z0-9_]*|[a-z][a-zA-Z0-9]*[A-Z][A-Za-z0-9]*)$",
+      "allowlist": [],
+      "co_change": true,
+      "co_change_docs": [
+        "docs/架构.md"
+      ]
+    }
+  ],
+  "knowledge": []
+}

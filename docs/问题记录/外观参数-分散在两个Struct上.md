@@ -1,3 +1,18 @@
+---
+id: "docs.issues.shading-antialiasing"
+title: "面板上的「抗锯齿」，别的参数能记住，它记住不了"
+summary: "「抗锯齿」在 scene.display 本体而非 shading 上，记忆/还原只扫 shading，所以被漏掉。"
+type: "explanation"
+kind: "note"
+status: "active"
+owner: "@simiely"
+topics: ["development"]
+source_type: "code"
+source: "addons/workbench_quick_render.py"
+last_reviewed: "2026-10-29"
+related: []
+---
+
 # 问题：面板上的「抗锯齿」，别的参数能记住，它记住不了
 
 **TL;DR**：面板外观参数里，「抗锯齿」不在 `scene.display.shading` 上，而在 `scene.display` 本体上 ——
